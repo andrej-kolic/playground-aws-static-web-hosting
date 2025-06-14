@@ -52,7 +52,7 @@ Edit `deploy-config.json` with your domain and preferences:
 {
   "dev": {
     "stackName": "your-website-dev",
-    "region": "us-east-1",
+    "region": "eu-west-1",
     "parameters": {
       "DomainName": "yourdomain.com",
       "SubDomain": "dev",

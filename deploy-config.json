@@ -1,7 +1,7 @@
 {
   "dev": {
     "stackName": "static-website-dev",
-    "region": "us-east-1",
+    "region": "eu-west-1",
     "parameters": {
       "DomainName": "example.com",
       "SubDomain": "dev",
@@ -17,7 +17,7 @@
   },
   "staging": {
     "stackName": "static-website-staging",
-    "region": "us-east-1",
+    "region": "eu-west-1",
     "parameters": {
       "DomainName": "example.com",
       "SubDomain": "staging",
@@ -33,7 +33,7 @@
   },
   "prod": {
     "stackName": "static-website-prod",
-    "region": "us-east-1",
+    "region": "eu-west-1",
     "parameters": {
       "DomainName": "yourdomain.com",
       "SubDomain": "www",
