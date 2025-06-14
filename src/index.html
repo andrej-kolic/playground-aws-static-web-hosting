@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Static Web Hosting Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <h1>My Static Site</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h2>Welcome to My Static Website</h2>
+                <p>This is a sample static website hosted on AWS S3 with CloudFront distribution.</p>
+                <button class="cta-button" onclick="showMessage()">Get Started</button>
+            </div>
+        </section>
+
+        <section id="about" class="about">
+            <div class="container">
+                <h2>About This Project</h2>
+                <p>This project demonstrates:</p>
+                <ul>
+                    <li>Static website hosting on AWS S3</li>
+                    <li>CloudFront CDN for global distribution</li>
+                    <li>Custom domain with SSL certificate</li>
+                    <li>Infrastructure as Code with CloudFormation</li>
+                    <li>CI/CD deployment with GitHub Actions</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="contact" class="contact">
+            <div class="container">
+                <h2>Contact</h2>
+                <p>This is a demo contact section.</p>
+                <div class="contact-info">
+                    <p>Email: demo@example.com</p>
+                    <p>Phone: +1 (555) 123-4567</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 My Static Site. All rights reserved.</p>
+            <p>Deployed with AWS CloudFormation and GitHub Actions</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

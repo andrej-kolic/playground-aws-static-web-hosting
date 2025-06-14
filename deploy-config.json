@@ -1,0 +1,51 @@
+{
+  "dev": {
+    "stackName": "static-website-dev",
+    "region": "us-east-1",
+    "parameters": {
+      "DomainName": "example.com",
+      "SubDomain": "dev",
+      "Environment": "dev",
+      "CreateSSLCertificate": "false",
+      "CreateRoute53Records": "false"
+    },
+    "tags": {
+      "Environment": "dev",
+      "Project": "StaticWebsite",
+      "Owner": "DevTeam"
+    }
+  },
+  "staging": {
+    "stackName": "static-website-staging",
+    "region": "us-east-1",
+    "parameters": {
+      "DomainName": "example.com",
+      "SubDomain": "staging",
+      "Environment": "staging",
+      "CreateSSLCertificate": "true",
+      "CreateRoute53Records": "true"
+    },
+    "tags": {
+      "Environment": "staging",
+      "Project": "StaticWebsite",
+      "Owner": "DevTeam"
+    }
+  },
+  "prod": {
+    "stackName": "static-website-prod",
+    "region": "us-east-1",
+    "parameters": {
+      "DomainName": "yourdomain.com",
+      "SubDomain": "www",
+      "Environment": "prod",
+      "CreateSSLCertificate": "true",
+      "CreateRoute53Records": "true"
+    },
+    "tags": {
+      "Environment": "prod",
+      "Project": "StaticWebsite",
+      "Owner": "DevTeam"
+    }
+  }
+}
+
