@@ -86,32 +86,57 @@ deploy_infrastructure() {
     print_info "Deploying infrastructure for environment: $ENVIRONMENT"
     print_info "Stack Name: $STACK_NAME"
     print_info "Region: $REGION"
+
+    local stack_operation=""
     
     if stack_exists; then
         print_info "Stack exists. Updating..."
-        aws cloudformation update-stack \
+        if ! aws cloudformation update-stack \
             --stack-name "$STACK_NAME" \
             --template-body file://$CF_TEMPLATE \
             --parameters $PARAMETERS \
             --tags $TAGS \
             --region "$REGION" \
-            --capabilities CAPABILITY_IAM
+            --capabilities CAPABILITY_IAM; then
+            print_error "Failed to initiate stack update"
+            exit 1
+        fi
+        stack_operation="update"
     else
         print_info "Stack does not exist. Creating..."
-        aws cloudformation create-stack \
+        if ! aws cloudformation create-stack \
             --stack-name "$STACK_NAME" \
             --template-body file://$CF_TEMPLATE \
             --parameters $PARAMETERS \
             --tags $TAGS \
             --region "$REGION" \
-            --capabilities CAPABILITY_IAM
+            --capabilities CAPABILITY_IAM; then
+            print_error "Failed to initiate stack creation"
+            exit 1
+        fi
+        stack_operation="create"
     fi
     
     print_info "Waiting for stack operation to complete..."
-    if stack_exists; then
-        aws cloudformation wait stack-update-complete --stack-name "$STACK_NAME" --region "$REGION"
+    
+    if [ "$stack_operation" = "update" ]; then
+        if ! aws cloudformation wait stack-update-complete --stack-name "$STACK_NAME" --region "$REGION"; then
+            print_error "Stack update failed or timed out"
+            print_info "Checking stack events for details..."
+            aws cloudformation describe-stack-events --stack-name "$STACK_NAME" --region "$REGION" \
+                --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED` || ResourceStatus==`DELETE_FAILED`].[Timestamp,ResourceType,LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
+                --output table
+            exit 1
+        fi
     else
-        aws cloudformation wait stack-create-complete --stack-name "$STACK_NAME" --region "$REGION"
+        if ! aws cloudformation wait stack-create-complete --stack-name "$STACK_NAME" --region "$REGION"; then
+            print_error "Stack creation failed or timed out"
+            print_info "Checking stack events for details..."
+            aws cloudformation describe-stack-events --stack-name "$STACK_NAME" --region "$REGION" \
+                --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED` || ResourceStatus==`DELETE_FAILED`].[Timestamp,ResourceType,LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
+                --output table
+            exit 1
+        fi
     fi
     
     print_success "Infrastructure deployment completed!"
@@ -121,27 +146,46 @@ deploy_infrastructure() {
 get_stack_outputs() {
     print_info "Retrieving stack outputs..."
     
+    if ! aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$REGION" &>/dev/null; then
+        print_error "Failed to retrieve stack information"
+        exit 1
+    fi
+    
     BUCKET_NAME=$(aws cloudformation describe-stacks \
         --stack-name "$STACK_NAME" \
         --region "$REGION" \
         --query 'Stacks[0].Outputs[?OutputKey==`WebsiteBucketName`].OutputValue' \
-        --output text)
+        --output text 2>/dev/null)
     
     DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
         --stack-name "$STACK_NAME" \
         --region "$REGION" \
         --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontDistributionId`].OutputValue' \
-        --output text)
+        --output text 2>/dev/null)
     
     WEBSITE_URL=$(aws cloudformation describe-stacks \
         --stack-name "$STACK_NAME" \
         --region "$REGION" \
         --query 'Stacks[0].Outputs[?OutputKey==`WebsiteURL`].OutputValue' \
-        --output text)
+        --output text 2>/dev/null)
     
-    print_info "Bucket Name: $BUCKET_NAME"
-    print_info "Distribution ID: $DISTRIBUTION_ID"
-    print_info "Website URL: $WEBSITE_URL"
+    if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
+        print_warning "Could not retrieve bucket name from stack outputs"
+    else
+        print_info "Bucket Name: $BUCKET_NAME"
+    fi
+    
+    if [ -z "$DISTRIBUTION_ID" ] || [ "$DISTRIBUTION_ID" = "None" ]; then
+        print_warning "Could not retrieve distribution ID from stack outputs"
+    else
+        print_info "Distribution ID: $DISTRIBUTION_ID"
+    fi
+    
+    if [ -z "$WEBSITE_URL" ] || [ "$WEBSITE_URL" = "None" ]; then
+        print_warning "Could not retrieve website URL from stack outputs"
+    else
+        print_info "Website URL: $WEBSITE_URL"
+    fi
 }
 
 # Deploy website content
@@ -153,29 +197,43 @@ deploy_content() {
         exit 1
     fi
     
+    if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
+        print_error "Bucket name not available for content deployment"
+        exit 1
+    fi
+    
     # Sync files to S3
-    aws s3 sync "$SOURCE_DIR" "s3://$BUCKET_NAME" \
+    if ! aws s3 sync "$SOURCE_DIR" "s3://$BUCKET_NAME" \
         --region "$REGION" \
         --delete \
         --cache-control "max-age=31536000" \
         --exclude "*.html" \
-        --exclude "*.json"
+        --exclude "*.json"; then
+        print_error "Failed to sync static assets to S3"
+        exit 1
+    fi
     
     # Upload HTML files with shorter cache control
-    aws s3 sync "$SOURCE_DIR" "s3://$BUCKET_NAME" \
+    if ! aws s3 sync "$SOURCE_DIR" "s3://$BUCKET_NAME" \
         --region "$REGION" \
         --delete \
         --cache-control "max-age=3600" \
         --content-type "text/html" \
-        --include "*.html"
+        --include "*.html"; then
+        print_error "Failed to sync HTML files to S3"
+        exit 1
+    fi
     
     # Upload JSON files with shorter cache control
-    aws s3 sync "$SOURCE_DIR" "s3://$BUCKET_NAME" \
+    if ! aws s3 sync "$SOURCE_DIR" "s3://$BUCKET_NAME" \
         --region "$REGION" \
         --delete \
         --cache-control "max-age=3600" \
         --content-type "application/json" \
-        --include "*.json"
+        --include "*.json"; then
+        print_error "Failed to sync JSON files to S3"
+        exit 1
+    fi
     
     print_success "Website content deployed!"
 }
@@ -184,18 +242,29 @@ deploy_content() {
 invalidate_cache() {
     print_info "Invalidating CloudFront cache..."
     
-    INVALIDATION_ID=$(aws cloudfront create-invalidation \
+    if [ -z "$DISTRIBUTION_ID" ] || [ "$DISTRIBUTION_ID" = "None" ]; then
+        print_error "Distribution ID not available for cache invalidation"
+        exit 1
+    fi
+    
+    if ! INVALIDATION_ID=$(aws cloudfront create-invalidation \
         --distribution-id "$DISTRIBUTION_ID" \
         --paths "/*" \
         --query 'Invalidation.Id' \
-        --output text)
+        --output text 2>/dev/null); then
+        print_error "Failed to create CloudFront invalidation"
+        exit 1
+    fi
     
     print_info "Invalidation ID: $INVALIDATION_ID"
     print_info "Waiting for invalidation to complete..."
     
-    aws cloudfront wait invalidation-completed \
+    if ! aws cloudfront wait invalidation-completed \
         --distribution-id "$DISTRIBUTION_ID" \
-        --id "$INVALIDATION_ID"
+        --id "$INVALIDATION_ID"; then
+        print_error "Invalidation failed or timed out"
+        exit 1
+    fi
     
     print_success "Cache invalidation completed!"
 }
@@ -208,19 +277,27 @@ delete_stack() {
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Empty S3 bucket first
-        if [ -n "$BUCKET_NAME" ]; then
+        if [ -n "$BUCKET_NAME" ] && [ "$BUCKET_NAME" != "None" ]; then
             print_info "Emptying S3 bucket: $BUCKET_NAME"
-            aws s3 rm "s3://$BUCKET_NAME" --recursive --region "$REGION"
+            if ! aws s3 rm "s3://$BUCKET_NAME" --recursive --region "$REGION" 2>/dev/null; then
+                print_warning "Failed to empty S3 bucket or bucket doesn't exist"
+            fi
         fi
         
-        aws cloudformation delete-stack \
+        if ! aws cloudformation delete-stack \
             --stack-name "$STACK_NAME" \
-            --region "$REGION"
+            --region "$REGION"; then
+            print_error "Failed to initiate stack deletion"
+            exit 1
+        fi
         
         print_info "Waiting for stack deletion to complete..."
-        aws cloudformation wait stack-delete-complete \
+        if ! aws cloudformation wait stack-delete-complete \
             --stack-name "$STACK_NAME" \
-            --region "$REGION"
+            --region "$REGION"; then
+            print_error "Stack deletion failed or timed out"
+            exit 1
+        fi
         
         print_success "Stack deleted successfully!"
     else
@@ -235,7 +312,7 @@ validate_template() {
     aws cloudformation validate-template \
         --template-body file://$CF_TEMPLATE \
         --region "$REGION"
-    
+
     print_success "Template validation successful!"
 }
 
