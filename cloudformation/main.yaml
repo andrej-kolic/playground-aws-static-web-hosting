@@ -80,13 +80,13 @@ Resources:
             Effect: Allow
             Principal: '*'
             Action: 's3:GetObject'
-            Resource: !Sub '${WebsiteBucket}/*'
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
           - Sid: AllowCloudFrontAccess
             Effect: Allow
             Principal:
               Service: cloudfront.amazonaws.com
             Action: 's3:GetObject'
-            Resource: !Sub '${WebsiteBucket}/*'
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
             Condition:
               StringEquals:
                 'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/*'
