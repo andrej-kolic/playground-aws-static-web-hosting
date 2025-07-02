@@ -40,8 +40,8 @@ This project creates a robust, scalable static website hosting solution with:
 ### 1. Clone and Configure
 
 ```bash
-git clone <your-repo-url>
-cd cf-web-infra
+git clone <repo-url>
+cd <repo-dir> # for example 'aws-static-web-hosting'
 ```
 
 ### 2. Update Configuration
