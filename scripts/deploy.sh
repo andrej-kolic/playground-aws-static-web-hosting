@@ -43,7 +43,7 @@ check_dependencies() {
         print_error "jq is required but not installed. Please install jq first."
         exit 1
     fi
-    
+
     if ! command -v aws &> /dev/null; then
         print_error "AWS CLI is required but not installed. Please install AWS CLI first."
         exit 1
@@ -57,17 +57,17 @@ get_config() {
         print_error "Configuration for environment '${env}' not found in ${CONFIG_FILE}"
         exit 1
     fi
-    
+
     STACK_NAME=$(jq -r ".${env}.stackName" "$CONFIG_FILE")
     REGION=$(jq -r ".${env}.region" "$CONFIG_FILE")
-    
+
     # Build parameters
     PARAMETERS=""
     for param in $(jq -r ".${env}.parameters | keys[]" "$CONFIG_FILE"); do
         value=$(jq -r ".${env}.parameters.${param}" "$CONFIG_FILE")
         PARAMETERS="${PARAMETERS} ParameterKey=${param},ParameterValue=${value}"
     done
-    
+
     # Build tags
     TAGS=""
     for tag in $(jq -r ".${env}.tags | keys[]" "$CONFIG_FILE"); do
@@ -88,7 +88,7 @@ deploy_infrastructure() {
     print_info "Region: $REGION"
 
     local stack_operation=""
-    
+
     if stack_exists; then
         print_info "Stack exists. Updating..."
         if ! aws cloudformation update-stack \
@@ -116,9 +116,9 @@ deploy_infrastructure() {
         fi
         stack_operation="create"
     fi
-    
+
     print_info "Waiting for stack operation to complete..."
-    
+
     if [ "$stack_operation" = "update" ]; then
         if ! aws cloudformation wait stack-update-complete --stack-name "$STACK_NAME" --region "$REGION"; then
             print_error "Stack update failed or timed out"
@@ -138,49 +138,49 @@ deploy_infrastructure() {
             exit 1
         fi
     fi
-    
+
     print_success "Infrastructure deployment completed!"
 }
 
 # Get stack outputs
 get_stack_outputs() {
     print_info "Retrieving stack outputs..."
-    
+
     if ! aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$REGION" &>/dev/null; then
         print_error "Failed to retrieve stack information"
         exit 1
     fi
-    
+
     BUCKET_NAME=$(aws cloudformation describe-stacks \
         --stack-name "$STACK_NAME" \
         --region "$REGION" \
         --query 'Stacks[0].Outputs[?OutputKey==`WebsiteBucketName`].OutputValue' \
         --output text 2>/dev/null)
-    
+
     DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
         --stack-name "$STACK_NAME" \
         --region "$REGION" \
         --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontDistributionId`].OutputValue' \
         --output text 2>/dev/null)
-    
+
     WEBSITE_URL=$(aws cloudformation describe-stacks \
         --stack-name "$STACK_NAME" \
         --region "$REGION" \
         --query 'Stacks[0].Outputs[?OutputKey==`WebsiteURL`].OutputValue' \
         --output text 2>/dev/null)
-    
+
     if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
         print_warning "Could not retrieve bucket name from stack outputs"
     else
         print_info "Bucket Name: $BUCKET_NAME"
     fi
-    
+
     if [ -z "$DISTRIBUTION_ID" ] || [ "$DISTRIBUTION_ID" = "None" ]; then
         print_warning "Could not retrieve distribution ID from stack outputs"
     else
         print_info "Distribution ID: $DISTRIBUTION_ID"
     fi
-    
+
     if [ -z "$WEBSITE_URL" ] || [ "$WEBSITE_URL" = "None" ]; then
         print_warning "Could not retrieve website URL from stack outputs"
     else
@@ -191,17 +191,17 @@ get_stack_outputs() {
 # Deploy website content
 deploy_content() {
     print_info "Deploying website content to S3..."
-    
+
     if [ ! -d "$SOURCE_DIR" ]; then
         print_error "Source directory '$SOURCE_DIR' not found!"
         exit 1
     fi
-    
+
     if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
         print_error "Bucket name not available for content deployment"
         exit 1
     fi
-    
+
     # Sync files to S3
     if ! aws s3 sync "$SOURCE_DIR" "s3://$BUCKET_NAME" \
         --region "$REGION" \
@@ -212,7 +212,7 @@ deploy_content() {
         print_error "Failed to sync static assets to S3"
         exit 1
     fi
-    
+
     # Upload HTML files with shorter cache control
     if ! aws s3 sync "$SOURCE_DIR" "s3://$BUCKET_NAME" \
         --region "$REGION" \
@@ -223,7 +223,7 @@ deploy_content() {
         print_error "Failed to sync HTML files to S3"
         exit 1
     fi
-    
+
     # Upload JSON files with shorter cache control
     if ! aws s3 sync "$SOURCE_DIR" "s3://$BUCKET_NAME" \
         --region "$REGION" \
@@ -234,19 +234,19 @@ deploy_content() {
         print_error "Failed to sync JSON files to S3"
         exit 1
     fi
-    
+
     print_success "Website content deployed!"
 }
 
 # Invalidate CloudFront cache
 invalidate_cache() {
     print_info "Invalidating CloudFront cache..."
-    
+
     if [ -z "$DISTRIBUTION_ID" ] || [ "$DISTRIBUTION_ID" = "None" ]; then
         print_error "Distribution ID not available for cache invalidation"
         exit 1
     fi
-    
+
     if ! INVALIDATION_ID=$(aws cloudfront create-invalidation \
         --distribution-id "$DISTRIBUTION_ID" \
         --paths "/*" \
@@ -255,17 +255,17 @@ invalidate_cache() {
         print_error "Failed to create CloudFront invalidation"
         exit 1
     fi
-    
+
     print_info "Invalidation ID: $INVALIDATION_ID"
     print_info "Waiting for invalidation to complete..."
-    
+
     if ! aws cloudfront wait invalidation-completed \
         --distribution-id "$DISTRIBUTION_ID" \
         --id "$INVALIDATION_ID"; then
         print_error "Invalidation failed or timed out"
         exit 1
     fi
-    
+
     print_success "Cache invalidation completed!"
 }
 
@@ -274,7 +274,7 @@ delete_stack() {
     print_warning "Deleting stack: $STACK_NAME"
     read -p "Are you sure you want to delete the stack? (y/N): " -n 1 -r
     echo
-    
+
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Empty S3 bucket first
         if [ -n "$BUCKET_NAME" ] && [ "$BUCKET_NAME" != "None" ]; then
@@ -283,14 +283,14 @@ delete_stack() {
                 print_warning "Failed to empty S3 bucket or bucket doesn't exist"
             fi
         fi
-        
+
         if ! aws cloudformation delete-stack \
             --stack-name "$STACK_NAME" \
             --region "$REGION"; then
             print_error "Failed to initiate stack deletion"
             exit 1
         fi
-        
+
         print_info "Waiting for stack deletion to complete..."
         if ! aws cloudformation wait stack-delete-complete \
             --stack-name "$STACK_NAME" \
@@ -298,7 +298,7 @@ delete_stack() {
             print_error "Stack deletion failed or timed out"
             exit 1
         fi
-        
+
         print_success "Stack deleted successfully!"
     else
         print_info "Stack deletion cancelled."
@@ -308,7 +308,7 @@ delete_stack() {
 # Validate CloudFormation template
 validate_template() {
     print_info "Validating CloudFormation template..."
-    
+
     aws cloudformation validate-template \
         --template-body file://$CF_TEMPLATE \
         --region "$REGION"
@@ -348,6 +348,7 @@ main() {
             ;;
         "validate")
             check_dependencies
+            get_config $ENVIRONMENT
             validate_template
             ;;
         "deploy")
@@ -395,4 +396,3 @@ main() {
 
 # Run main function
 main
-
