@@ -44,7 +44,7 @@
     "ssl",
     "cdn"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Andrej Kolic <andrej.kolic@gmail.com>",
   "license": "MIT",
   "engines": {
     "node": ">=14.0.0"
