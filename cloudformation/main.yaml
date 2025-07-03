@@ -193,11 +193,24 @@ Resources:
           Value: 'StaticWebsite'
 
   # Route53 Hosted Zone (if creating DNS records)
+  HostedZone:
+    Type: AWS::Route53::HostedZone
+    Condition: CreateDNS
+    Properties:
+      Name: !Ref DomainName
+      HostedZoneConfig:
+        Comment: !Sub 'Hosted zone for ${DomainName}'
+      HostedZoneTags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: 'StaticWebsite'
+
   Route53RecordSet:
     Type: AWS::Route53::RecordSet
     Condition: CreateDNS
     Properties:
-      HostedZoneName: !Sub '${DomainName}.'
+      HostedZoneId: !Ref HostedZone
       Name: !If 
         - HasSubDomain
         - !Sub '${SubDomain}.${DomainName}'

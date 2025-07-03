@@ -3,7 +3,7 @@
     "stackName": "static-website-dev",
     "region": "eu-west-1",
     "parameters": {
-      "DomainName": "example.com",
+      "DomainName": "andrejkolic.com",
       "SubDomain": "dev",
       "Environment": "dev",
       "CreateSSLCertificate": "false",
@@ -19,10 +19,10 @@
     "stackName": "static-website-staging",
     "region": "eu-west-1",
     "parameters": {
-      "DomainName": "example.com",
+      "DomainName": "andrejkolic.com",
       "SubDomain": "staging",
       "Environment": "staging",
-      "CreateSSLCertificate": "true",
+      "CreateSSLCertificate": "false",
       "CreateRoute53Records": "true"
     },
     "tags": {
@@ -35,7 +35,7 @@
     "stackName": "static-website-prod",
     "region": "eu-west-1",
     "parameters": {
-      "DomainName": "yourdomain.com",
+      "DomainName": "andrejkolic.com",
       "SubDomain": "www",
       "Environment": "prod",
       "CreateSSLCertificate": "true",
