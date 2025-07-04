@@ -6,12 +6,12 @@ Parameters:
     Type: String
     Description: 'Domain name for the website (e.g., example.com)'
     Default: 'example.com'
-    
+
   SubDomain:
     Type: String
     Description: 'Subdomain for the website (e.g., www)'
     Default: 'www'
-    
+
   Environment:
     Type: String
     Description: 'Environment name'
@@ -20,7 +20,7 @@ Parameters:
       - dev
       - staging
       - prod
-      
+
   CreateSSLCertificate:
     Type: String
     Description: 'Whether to create SSL certificate (requires domain validation)'
@@ -28,7 +28,7 @@ Parameters:
     AllowedValues:
       - 'true'
       - 'false'
-      
+
   CreateRoute53Records:
     Type: String
     Description: 'Whether to create Route53 DNS records (requires hosted zone)'
@@ -47,9 +47,9 @@ Resources:
   WebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub 
+      BucketName: !Sub
         - '${FullDomain}-${Environment}-${AWS::AccountId}'
-        - FullDomain: !If 
+        - FullDomain: !If
             - HasSubDomain
             - !Sub '${SubDomain}.${DomainName}'
             - !Ref DomainName
@@ -107,18 +107,18 @@ Resources:
     Type: AWS::CertificateManager::Certificate
     Condition: CreateSSL
     Properties:
-      DomainName: !If 
+      DomainName: !If
         - HasSubDomain
         - !Sub '${SubDomain}.${DomainName}'
         - !Ref DomainName
       SubjectAlternativeNames:
-        - !If 
+        - !If
             - HasSubDomain
             - !Ref DomainName
             - !Sub '*.${DomainName}'
       ValidationMethod: DNS
       DomainValidationOptions:
-        - DomainName: !If 
+        - DomainName: !If
             - HasSubDomain
             - !Sub '${SubDomain}.${DomainName}'
             - !Ref DomainName
@@ -172,7 +172,7 @@ Resources:
             ErrorCachingMinTTL: 300
         Aliases: !If
           - CreateSSL
-          - - !If 
+          - - !If
                 - HasSubDomain
                 - !Sub '${SubDomain}.${DomainName}'
                 - !Ref DomainName
@@ -211,7 +211,7 @@ Resources:
     Condition: CreateDNS
     Properties:
       HostedZoneId: !Ref HostedZone
-      Name: !If 
+      Name: !If
         - HasSubDomain
         - !Sub '${SubDomain}.${DomainName}'
         - !Ref DomainName
@@ -227,43 +227,42 @@ Outputs:
     Value: !Ref WebsiteBucket
     Export:
       Name: !Sub '${AWS::StackName}-BucketName'
-      
+
   WebsiteBucketArn:
     Description: 'ARN of the S3 bucket'
     Value: !GetAtt WebsiteBucket.Arn
     Export:
       Name: !Sub '${AWS::StackName}-BucketArn'
-      
+
   CloudFrontDistributionId:
     Description: 'CloudFront Distribution ID'
     Value: !Ref CloudFrontDistribution
     Export:
       Name: !Sub '${AWS::StackName}-DistributionId'
-      
+
   CloudFrontDomainName:
     Description: 'CloudFront Distribution Domain Name'
     Value: !GetAtt CloudFrontDistribution.DomainName
     Export:
       Name: !Sub '${AWS::StackName}-DistributionDomainName'
-      
+
   WebsiteURL:
     Description: 'Website URL'
     Value: !If
       - CreateSSL
-      - !Sub 
+      - !Sub
         - 'https://${FullDomain}'
-        - FullDomain: !If 
+        - FullDomain: !If
             - HasSubDomain
             - !Sub '${SubDomain}.${DomainName}'
             - !Ref DomainName
       - !Sub 'https://${CloudFrontDistribution.DomainName}'
     Export:
       Name: !Sub '${AWS::StackName}-WebsiteURL'
-      
+
   SSLCertificateArn:
     Description: 'SSL Certificate ARN'
     Condition: CreateSSL
     Value: !Ref SSLCertificate
     Export:
       Name: !Sub '${AWS::StackName}-SSLCertificateArn'
-

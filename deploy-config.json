@@ -22,7 +22,7 @@
       "DomainName": "andrejkolic.com",
       "SubDomain": "staging",
       "Environment": "staging",
-      "CreateSSLCertificate": "false",
+      "CreateSSLCertificate": "true",
       "CreateRoute53Records": "true"
     },
     "tags": {
