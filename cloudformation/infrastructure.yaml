@@ -37,16 +37,16 @@ Resources:
         - CreateWildcard
         - !Sub '*.${DomainName}'
         - !Ref DomainName
-      SubjectAlternativeNames:
-        - !Ref DomainName
+      SubjectAlternativeNames: !If
+        - CreateWildcard
+        - - !Ref DomainName
+        - !Ref 'AWS::NoValue'
       ValidationMethod: DNS
       DomainValidationOptions:
         - DomainName: !If
             - CreateWildcard
             - !Sub '*.${DomainName}'
             - !Ref DomainName
-          HostedZoneId: !Ref HostedZone
-        - DomainName: !Ref DomainName
           HostedZoneId: !Ref HostedZone
       Tags:
         - Key: Project
