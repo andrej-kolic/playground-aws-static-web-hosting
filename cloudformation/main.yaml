@@ -2,15 +2,15 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Static Website Hosting with S3, CloudFront, and Route53'
 
 Parameters:
-  DomainName:
+  InfrastructureStackName:
     Type: String
-    Description: 'Domain name for the website (e.g., example.com)'
-    Default: 'example.com'
+    Description: 'Name of the shared infrastructure stack containing hosted zone and SSL certificate'
+    Default: 'static-website-infrastructure'
 
   SubDomain:
     Type: String
-    Description: 'Subdomain for the website (e.g., www)'
-    Default: 'www'
+    Description: 'Subdomain for the website (e.g., www, dev, staging)'
+    Default: 'dev'
 
   Environment:
     Type: String
@@ -21,24 +21,24 @@ Parameters:
       - staging
       - prod
 
-  CreateSSLCertificate:
+  UseSSL:
     Type: String
-    Description: 'Whether to create SSL certificate (requires domain validation)'
-    Default: 'false'
+    Description: 'Whether to use SSL certificate from infrastructure stack'
+    Default: 'true'
     AllowedValues:
       - 'true'
       - 'false'
 
   CreateRoute53Records:
     Type: String
-    Description: 'Whether to create Route53 DNS records (requires hosted zone)'
-    Default: 'false'
+    Description: 'Whether to create Route53 DNS records'
+    Default: 'true'
     AllowedValues:
       - 'true'
       - 'false'
 
 Conditions:
-  CreateSSL: !Equals [!Ref CreateSSLCertificate, 'true']
+  UseSSLCondition: !Equals [!Ref UseSSL, 'true']
   CreateDNS: !Equals [!Ref CreateRoute53Records, 'true']
   HasSubDomain: !Not [!Equals [!Ref SubDomain, '']]
 
@@ -51,8 +51,12 @@ Resources:
         - '${FullDomain}-${Environment}-${AWS::AccountId}'
         - FullDomain: !If
             - HasSubDomain
-            - !Sub '${SubDomain}.${DomainName}'
-            - !Ref DomainName
+            - !Sub
+              - '${SubDomain}.${DomainName}'
+              - DomainName: !ImportValue
+                  'Fn::Sub': '${InfrastructureStackName}-DomainName'
+            - !ImportValue
+                'Fn::Sub': '${InfrastructureStackName}-DomainName'
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
@@ -102,33 +106,6 @@ Resources:
         SigningProtocol: sigv4
         Description: 'OAC for static website'
 
-  # SSL Certificate (optional)
-  SSLCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Condition: CreateSSL
-    Properties:
-      DomainName: !If
-        - HasSubDomain
-        - !Sub '${SubDomain}.${DomainName}'
-        - !Ref DomainName
-      SubjectAlternativeNames:
-        - !If
-            - HasSubDomain
-            - !Ref DomainName
-            - !Sub '*.${DomainName}'
-      ValidationMethod: DNS
-      DomainValidationOptions:
-        - DomainName: !If
-            - HasSubDomain
-            - !Sub '${SubDomain}.${DomainName}'
-            - !Ref DomainName
-          ValidationDomain: !Ref DomainName
-      Tags:
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Project
-          Value: 'StaticWebsite'
-
   # CloudFront Distribution
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
@@ -171,15 +148,20 @@ Resources:
             ResponsePagePath: /index.html
             ErrorCachingMinTTL: 300
         Aliases: !If
-          - CreateSSL
+          - UseSSLCondition
           - - !If
                 - HasSubDomain
-                - !Sub '${SubDomain}.${DomainName}'
-                - !Ref DomainName
+                - !Sub
+                  - '${SubDomain}.${DomainName}'
+                  - DomainName: !ImportValue
+                      'Fn::Sub': '${InfrastructureStackName}-DomainName'
+                - !ImportValue
+                    'Fn::Sub': '${InfrastructureStackName}-DomainName'
           - !Ref 'AWS::NoValue'
         ViewerCertificate: !If
-          - CreateSSL
-          - AcmCertificateArn: !Ref SSLCertificate
+          - UseSSLCondition
+          - AcmCertificateArn: !ImportValue
+              'Fn::Sub': '${InfrastructureStackName}-SSLCertificateArn'
             SslSupportMethod: sni-only
             MinimumProtocolVersion: TLSv1.2_2021
           - CloudFrontDefaultCertificate: true
@@ -192,29 +174,21 @@ Resources:
         - Key: Project
           Value: 'StaticWebsite'
 
-  # Route53 Hosted Zone (if creating DNS records)
-  HostedZone:
-    Type: AWS::Route53::HostedZone
-    Condition: CreateDNS
-    Properties:
-      Name: !Ref DomainName
-      HostedZoneConfig:
-        Comment: !Sub 'Hosted zone for ${DomainName}'
-      HostedZoneTags:
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Project
-          Value: 'StaticWebsite'
-
+  # Route53 DNS Record
   Route53RecordSet:
     Type: AWS::Route53::RecordSet
     Condition: CreateDNS
     Properties:
-      HostedZoneId: !Ref HostedZone
+      HostedZoneId: !ImportValue
+        'Fn::Sub': '${InfrastructureStackName}-HostedZoneId'
       Name: !If
         - HasSubDomain
-        - !Sub '${SubDomain}.${DomainName}'
-        - !Ref DomainName
+        - !Sub
+          - '${SubDomain}.${DomainName}'
+          - DomainName: !ImportValue
+              'Fn::Sub': '${InfrastructureStackName}-DomainName'
+        - !ImportValue
+            'Fn::Sub': '${InfrastructureStackName}-DomainName'
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
@@ -249,20 +223,23 @@ Outputs:
   WebsiteURL:
     Description: 'Website URL'
     Value: !If
-      - CreateSSL
+      - UseSSLCondition
       - !Sub
         - 'https://${FullDomain}'
         - FullDomain: !If
             - HasSubDomain
-            - !Sub '${SubDomain}.${DomainName}'
-            - !Ref DomainName
+            - !Sub
+              - '${SubDomain}.${DomainName}'
+              - DomainName: !ImportValue
+                  'Fn::Sub': '${InfrastructureStackName}-DomainName'
+            - !ImportValue
+                'Fn::Sub': '${InfrastructureStackName}-DomainName'
       - !Sub 'https://${CloudFrontDistribution.DomainName}'
     Export:
       Name: !Sub '${AWS::StackName}-WebsiteURL'
 
-  SSLCertificateArn:
-    Description: 'SSL Certificate ARN'
-    Condition: CreateSSL
-    Value: !Ref SSLCertificate
+  InfrastructureStackName:
+    Description: 'Infrastructure stack name used for shared resources'
+    Value: !Ref InfrastructureStackName
     Export:
-      Name: !Sub '${AWS::StackName}-SSLCertificateArn'
+      Name: !Sub '${AWS::StackName}-InfrastructureStackName'

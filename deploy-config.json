@@ -3,11 +3,11 @@
     "stackName": "static-website-dev",
     "region": "us-east-1",
     "parameters": {
-      "DomainName": "andrejkolic.com",
+      "InfrastructureStackName": "static-website-infrastructure",
       "SubDomain": "dev",
       "Environment": "dev",
-      "CreateSSLCertificate": "false",
-      "CreateRoute53Records": "false"
+      "UseSSL": "true",
+      "CreateRoute53Records": "true"
     },
     "tags": {
       "Environment": "dev",
@@ -19,10 +19,10 @@
     "stackName": "static-website-staging",
     "region": "us-east-1",
     "parameters": {
-      "DomainName": "andrejkolic.com",
+      "InfrastructureStackName": "static-website-infrastructure",
       "SubDomain": "staging",
       "Environment": "staging",
-      "CreateSSLCertificate": "true",
+      "UseSSL": "true",
       "CreateRoute53Records": "true"
     },
     "tags": {
@@ -35,10 +35,10 @@
     "stackName": "static-website-prod",
     "region": "us-east-1",
     "parameters": {
-      "DomainName": "andrejkolic.com",
+      "InfrastructureStackName": "static-website-infrastructure",
       "SubDomain": "www",
       "Environment": "prod",
-      "CreateSSLCertificate": "true",
+      "UseSSL": "true",
       "CreateRoute53Records": "true"
     },
     "tags": {
