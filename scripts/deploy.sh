@@ -133,7 +133,7 @@ deploy_infrastructure() {
             print_error "Stack creation failed or timed out"
             print_info "Checking stack events for details..."
             aws cloudformation describe-stack-events --stack-name "$STACK_NAME" --region "$REGION" \
-                --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED` || ResourceStatus==`DELETE_FAILED`].[Timestamp,ResourceType,LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
+                --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED` || ResourceStatus==`DELETE_FAILED` || ResourceStatus==`ROLLBACK_IN_PROGRESS`].[Timestamp,ResourceType,LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
                 --output table
             exit 1
         fi

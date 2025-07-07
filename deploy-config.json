@@ -6,8 +6,8 @@
       "InfrastructureStackName": "static-website-infrastructure",
       "SubDomain": "dev",
       "Environment": "dev",
-      "UseSSL": "true",
-      "CreateRoute53Records": "true"
+      "UseSSL": "false",
+      "CreateRoute53Records": "false"
     },
     "tags": {
       "Environment": "dev",
