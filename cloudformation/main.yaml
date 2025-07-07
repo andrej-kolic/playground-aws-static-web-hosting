@@ -39,7 +39,7 @@ Parameters:
 
 Conditions:
   UseSSLCondition: !Equals [!Ref UseSSL, 'true']
-  CreateDNS: !Equals [!Ref CreateRoute53Records, 'true']
+  CreateRoute53RecordsCondition: !Equals [!Ref CreateRoute53Records, 'true']
   HasSubDomain: !Not [!Equals [!Ref SubDomain, '']]
 
 Resources:
@@ -47,16 +47,7 @@ Resources:
   WebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub
-        - '${FullDomain}-${Environment}-${AWS::AccountId}'
-        - FullDomain: !If
-            - HasSubDomain
-            - !Sub
-              - '${SubDomain}.${DomainName}'
-              - DomainName: !ImportValue
-                  'Fn::Sub': '${InfrastructureStackName}-DomainName'
-            - !ImportValue
-                'Fn::Sub': '${InfrastructureStackName}-DomainName'
+      BucketName: !Sub '${AWS::StackName}-${AWS::AccountId}'
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
@@ -177,7 +168,7 @@ Resources:
   # Route53 DNS Record
   Route53RecordSet:
     Type: AWS::Route53::RecordSet
-    Condition: CreateDNS
+    Condition: CreateRoute53RecordsCondition
     Properties:
       HostedZoneId: !ImportValue
         'Fn::Sub': '${InfrastructureStackName}-HostedZoneId'
