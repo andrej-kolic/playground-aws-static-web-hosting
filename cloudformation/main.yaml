@@ -140,14 +140,15 @@ Resources:
             ErrorCachingMinTTL: 300
         Aliases: !If
           - UseSSLCondition
-          - - !If
-              - HasSubDomain
-              - !Sub
-                - "${SubDomain}.${DomainName}"
-                - DomainName: !ImportValue
-                    "Fn::Sub": "${InfrastructureStackName}-DomainName"
-              - !ImportValue
-                "Fn::Sub": "${InfrastructureStackName}-DomainName"
+          -
+            - !Sub
+                - "${Prefix}${DomainName}"
+                - Prefix: !If
+                    - HasSubDomain
+                    - !Sub "${SubDomain}."
+                    - ""
+                  DomainName: !ImportValue
+                      "Fn::Sub": "${InfrastructureStackName}-DomainName"
           - !Ref "AWS::NoValue"
         ViewerCertificate: !If
           - UseSSLCondition
@@ -172,14 +173,14 @@ Resources:
     Properties:
       HostedZoneId: !ImportValue
         "Fn::Sub": "${InfrastructureStackName}-HostedZoneId"
-      Name: !If
-        - HasSubDomain
-        - !Sub
-          - "${SubDomain}.${DomainName}"
-          - DomainName: !ImportValue
+      Name: !Sub
+        - "${Prefix}${DomainName}"
+        - Prefix: !If
+            - HasSubDomain
+            - !Sub "${SubDomain}."
+            - ""
+          DomainName: !ImportValue
               "Fn::Sub": "${InfrastructureStackName}-DomainName"
-        - !ImportValue
-          "Fn::Sub": "${InfrastructureStackName}-DomainName"
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
@@ -216,15 +217,13 @@ Outputs:
     Value: !If
       - UseSSLCondition
       - !Sub
-        - "https://${FullDomain}"
-        - FullDomain: !If
-            - HasSubDomain
-            - !Sub
-              - "${SubDomain}.${DomainName}"
-              - DomainName: !ImportValue
-                  "Fn::Sub": "${InfrastructureStackName}-DomainName"
-            - !ImportValue
-              "Fn::Sub": "${InfrastructureStackName}-DomainName"
+          - "https://${Prefix}${DomainName}"
+          - Prefix: !If
+              - HasSubDomain
+              - !Sub "${SubDomain}."
+              - ""
+            DomainName: !ImportValue
+                "Fn::Sub": "${InfrastructureStackName}-DomainName"
       - !Sub "https://${CloudFrontDistribution.DomainName}"
     Export:
       Name: !Sub "${AWS::StackName}-WebsiteURL"
