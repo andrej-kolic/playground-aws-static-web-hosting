@@ -113,29 +113,88 @@ jobs:
               console.log('Could not get deployment info:', error.message);
             }
 
-  # # Deploy to staging environment
-  # deploy-staging:
-  #   runs-on: ubuntu-latest
-  #   needs: validate
-  #   if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
-  #   environment: staging
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+  # Deploy to staging environment
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ env.AWS_DEFAULT_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
-  #     - name: Install dependencies
-  #       run: |
-  #         sudo apt-get update
-  #         sudo apt-get install -y jq
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
 
-  #     - name: Deploy to staging
-  #       run: |
-  #         action="${{ github.event.inputs.action || 'deploy' }}"
-  #         ./scripts/deploy.sh staging $action
+      - name: Deploy to staging
+        run: |
+          action="${{ github.event.inputs.action || 'deploy' }}"
+          ./scripts/deploy-static-site.sh staging $action
+
+  # Deploy to production environment
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: [validate, deploy-staging]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Deploy to production
+        run: |
+          action="${{ github.event.inputs.action || 'deploy' }}"
+          ./scripts/deploy-static-site.sh prod $action
+
+      - name: Create GitHub release
+        if: github.event.inputs.action == 'deploy' || github.event.inputs.action == ''
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: release-${{ github.run_number }}
+          release_name: Production Release ${{ github.run_number }}
+          body: |
+            🚀 **Production Deployment**
+            
+            **Changes in this release:**
+            ${{ github.event.head_commit.message }}
+            
+            **Commit:** ${{ github.sha }}
+            **Deployed by:** ${{ github.actor }}
+            **Workflow:** ${{ github.workflow }}
+          draft: false
+          prerelease: false
+
+  # Security and compliance checks
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security scan on CloudFormation
+        uses: stelligent/cfn_nag@master
+        with:
+          input_path: cloudformation/main.yaml
