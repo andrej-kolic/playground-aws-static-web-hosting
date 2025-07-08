@@ -1,13 +1,13 @@
 name: Deploy Static Website
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-  pull_request:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
+  #     - develop
+  # pull_request:
+  #   branches:
+  #     - main
   workflow_dispatch:
     inputs:
       environment:
@@ -38,6 +38,9 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
+      - name: Log
+        run: echo "Start validation job..."
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -50,11 +53,13 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo "Installing dependencies..."
           sudo apt-get update
           sudo apt-get install -y jq
 
       - name: Validate CloudFormation template
         run: |
+          echo "Validating CloudFormation template..."
           aws cloudformation validate-template \
             --template-body file://cloudformation/static-site.yaml \
             --region ${{ env.AWS_DEFAULT_REGION }}
