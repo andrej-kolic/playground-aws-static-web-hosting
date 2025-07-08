@@ -197,4 +197,4 @@ jobs:
       - name: Run security scan on CloudFormation
         uses: stelligent/cfn_nag@master
         with:
-          input_path: cloudformation/main.yaml
+          input_path: cloudformation/static-site.yaml
