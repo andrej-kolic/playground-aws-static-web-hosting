@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Infrastructure Stack Deployment Script
+# DNS & SSL Stack Deployment Script
 # This script deploys the shared infrastructure (hosted zone and SSL certificate)
 # that is used across all environments
-# Usage: ./scripts/deploy-infrastructure.sh [action]
-# Example: ./scripts/deploy-infrastructure.sh deploy
+# Usage: ./scripts/deploy-dns-ssl.sh [action]
+# Example: ./scripts/deploy-dns-ssl.sh deploy
 
 set -e
 
@@ -17,9 +17,9 @@ NC='\033[0m' # No Color
 
 # Default values
 ACTION=${1:-deploy}
-CONFIG_FILE="infrastructure-config.json"
-CF_TEMPLATE="cloudformation/infrastructure.yaml"
-ENVIRONMENT="infrastructure"
+CONFIG_FILE="dns-ssl-config.json"
+CF_TEMPLATE="cloudformation/dns-ssl.yaml"
+CONFIG_ROOT="dns_ssl"
 
 # Helper functions
 print_info() {
@@ -64,21 +64,21 @@ check_files() {
     fi
 }
 
-# Get configuration for infrastructure
+# Get configuration for dns-ssl stack
 get_config() {
     local key=$1
-    echo $(jq -r ".infrastructure.${key}" "$CONFIG_FILE")
+    echo $(jq -r ".${CONFIG_ROOT}.${key}" "$CONFIG_FILE")
 }
 
 # Get all parameters as CloudFormation format
 get_parameters() {
-    local params=$(jq -r ".${ENVIRONMENT}.parameters | to_entries | map(\"ParameterKey=\" + .key + \",ParameterValue=\" + .value) | join(\" \")" "$CONFIG_FILE")
+    local params=$(jq -r ".${CONFIG_ROOT}.parameters | to_entries | map(\"ParameterKey=\" + .key + \",ParameterValue=\" + .value) | join(\" \")" "$CONFIG_FILE")
     echo "$params"
 }
 
 # Get all tags as CloudFormation format
 get_tags() {
-    local tags=$(jq -r ".${ENVIRONMENT}.tags | to_entries | map(\"Key=\" + .key + \",Value=\" + .value) | join(\" \")" "$CONFIG_FILE")
+    local tags=$(jq -r ".${CONFIG_ROOT}.tags | to_entries | map(\"Key=\" + .key + \",Value=\" + .value) | join(\" \")" "$CONFIG_FILE")
     echo "$tags"
 }
 
@@ -89,7 +89,7 @@ deploy_stack() {
     local parameters=$(get_parameters)
     local tags=$(get_tags)
 
-    print_info "Deploying infrastructure stack: $stack_name"
+    print_info "Deploying dns-ssl stack: $stack_name"
     print_info "Region: $region"
     print_info "Template: $CF_TEMPLATE"
 
@@ -134,7 +134,7 @@ delete_stack() {
     local stack_name=$(get_config "stackName")
     local region=$(get_config "region")
 
-    print_warning "Deleting infrastructure stack: $stack_name"
+    print_warning "Deleting dns-ssl stack: $stack_name"
     print_warning "This will delete the hosted zone and SSL certificate!"
     read -p "Are you sure you want to continue? (y/N): " -n 1 -r
     echo
@@ -158,7 +158,7 @@ get_status() {
     local stack_name=$(get_config "stackName")
     local region=$(get_config "region")
 
-    print_info "Getting status for infrastructure stack: $stack_name"
+    print_info "Getting status for dns-ssl stack: $stack_name"
 
     if aws cloudformation describe-stacks --stack-name "$stack_name" --region "$region" &>/dev/null; then
         aws cloudformation describe-stacks \
@@ -199,20 +199,20 @@ validate_template() {
 
 # Show help
 show_help() {
-    echo "Infrastructure Stack Deployment Script"
+    echo "DNS & SSL Stack Deployment Script"
     echo ""
     echo "Usage: $0 [action]"
     echo ""
     echo "Actions:"
-    echo "  deploy    Deploy or update the infrastructure stack (default)"
-    echo "  delete    Delete the infrastructure stack"
-    echo "  status    Get the current status of the infrastructure stack"
+    echo "  deploy    Deploy or update the DNS & SSL stack (default)"
+    echo "  delete    Delete the DNS & SSL stack"
+    echo "  status    Get the current status of the DNS & SSL stack"
     echo "  validate  Validate the CloudFormation template"
     echo "  help      Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 deploy    # Deploy the infrastructure stack"
-    echo "  $0 delete    # Delete the infrastructure stack"
+    echo "  $0 deploy    # Deploy the DNS & SSL stack"
+    echo "  $0 delete    # Delete the DNS & SSL stack"
     echo "  $0 status    # Get stack status"
 }
 

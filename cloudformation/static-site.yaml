@@ -2,10 +2,10 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "Static Website Hosting with S3, CloudFront, and Route53"
 
 Parameters:
-  InfrastructureStackName:
+  DnsSslStackName:
     Type: String
-    Description: "Name of the shared infrastructure stack containing hosted zone and SSL certificate"
-    Default: "static-website-infrastructure"
+    Description: "Name of the shared dns-ssl stack containing hosted zone and SSL certificate"
+    Default: "static-website-dsn-ssl"
 
   SubDomain:
     Type: String
@@ -23,7 +23,7 @@ Parameters:
 
   UseSSL:
     Type: String
-    Description: "Whether to use SSL certificate from infrastructure stack"
+    Description: "Whether to use SSL certificate from dns-ssl stack"
     Default: "true"
     AllowedValues:
       - "true"
@@ -148,12 +148,12 @@ Resources:
                     - !Sub "${SubDomain}."
                     - ""
                   DomainName: !ImportValue
-                      "Fn::Sub": "${InfrastructureStackName}-DomainName"
+                      "!Sub": "${DnsSslStackName}-DomainName"
           - !Ref "AWS::NoValue"
         ViewerCertificate: !If
           - UseSSLCondition
           - AcmCertificateArn: !ImportValue
-              "Fn::Sub": "${InfrastructureStackName}-SSLCertificateArn"
+              "!Sub": "${DnsSslStackName}-SSLCertificateArn"
             SslSupportMethod: sni-only
             MinimumProtocolVersion: TLSv1.2_2021
           - CloudFrontDefaultCertificate: true
@@ -172,7 +172,7 @@ Resources:
     Condition: CreateRoute53RecordsCondition
     Properties:
       HostedZoneId: !ImportValue
-        "Fn::Sub": "${InfrastructureStackName}-HostedZoneId"
+        "!Sub": "${DnsSslStackName}-HostedZoneId"
       Name: !Sub
         - "${Prefix}${DomainName}"
         - Prefix: !If
@@ -180,7 +180,7 @@ Resources:
             - !Sub "${SubDomain}."
             - ""
           DomainName: !ImportValue
-              "Fn::Sub": "${InfrastructureStackName}-DomainName"
+              "!Sub": "${DnsSslStackName}-DomainName"
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
@@ -223,13 +223,13 @@ Outputs:
               - !Sub "${SubDomain}."
               - ""
             DomainName: !ImportValue
-                "Fn::Sub": "${InfrastructureStackName}-DomainName"
+                "!Sub": "${DnsSslStackName}-DomainName"
       - !Sub "https://${CloudFrontDistribution.DomainName}"
     Export:
       Name: !Sub "${AWS::StackName}-WebsiteURL"
 
-  InfrastructureStackName:
-    Description: "Infrastructure stack name used for shared resources"
-    Value: !Ref InfrastructureStackName
+  DnsSslStackName:
+    Description: "DnsSsl stack name used for shared resources"
+    Value: !Ref DnsSslStackName
     Export:
-      Name: !Sub "${AWS::StackName}-InfrastructureStackName"
+      Name: !Sub "${AWS::StackName}-DnsSslStackName"

@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Static Website Deployment Script
-# Usage: ./scripts/deploy.sh [environment] [action]
-# Example: ./scripts/deploy.sh dev deploy
+# Static Site Stack Deployment Script
+# This script deploys the static site hosting resources (S3, CloudFront, etc)
+# Usage: ./scripts/deploy-static-site.sh [environment] [action]
+# Example: ./scripts/deploy-static-site.sh dev deploy
 
 set -e
 
@@ -16,8 +17,8 @@ NC='\033[0m' # No Color
 # Default values
 ENVIRONMENT=${1:-dev}
 ACTION=${2:-deploy}
-CONFIG_FILE="deploy-config.json"
-CF_TEMPLATE="cloudformation/main.yaml"
+CONFIG_FILE="static-site-config.json"
+CF_TEMPLATE="cloudformation/static-site.yaml"
 SOURCE_DIR="src"
 
 # Helper functions

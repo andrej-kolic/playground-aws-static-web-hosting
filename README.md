@@ -46,7 +46,7 @@ cd <repo-dir> # for example 'aws-static-web-hosting'
 
 ### 2. Update Configuration
 
-Edit `deploy-config.json` with your domain and preferences:
+Edit `static-site-config.json` with your domain and preferences:
 
 ```json
 {
@@ -68,16 +68,16 @@ Edit `deploy-config.json` with your domain and preferences:
 
 ```bash
 # Deploy to development environment
-./scripts/deploy.sh dev deploy
+./scripts/deploy-static-site.sh dev deploy
 
 # Deploy only infrastructure
-./scripts/deploy.sh dev infra
+./scripts/deploy-static-site.sh dev infra
 
 # Deploy only content
-./scripts/deploy.sh dev content
+./scripts/deploy-static-site.sh dev content
 
-# Validate CloudFormation template
-./scripts/deploy.sh dev validate
+# Validate static site CloudFormation template
+./scripts/deploy-static-site.sh dev validate
 ```
 
 ### 4. Deploy via GitHub Actions
@@ -90,7 +90,7 @@ Edit `deploy-config.json` with your domain and preferences:
 
 ### Environment Configuration
 
-The `deploy-config.json` file contains environment-specific settings:
+The `static-site-config.json` file contains environment-specific settings:
 
 ```json
 {
@@ -131,16 +131,16 @@ Use the deployment script for local development and testing:
 
 ```bash
 # Available commands
-./scripts/deploy.sh [environment] [action]
+./scripts/deploy-static-site.sh [environment] [action]
 
 # Examples
-./scripts/deploy.sh dev deploy      # Full deployment
-./scripts/deploy.sh prod infra      # Infrastructure only
-./scripts/deploy.sh staging content # Content only
-./scripts/deploy.sh dev delete      # Delete stack
-./scripts/deploy.sh dev outputs     # Show outputs
-./scripts/deploy.sh dev validate    # Validate template
-./scripts/deploy.sh help            # Show help
+./scripts/deploy-static-site.sh dev deploy      # Full deployment
+./scripts/deploy-static-site.sh prod infra      # Infrastructure only
+./scripts/deploy-static-site.sh staging content # Content only
+./scripts/deploy-static-site.sh dev delete      # Delete stack
+./scripts/deploy-static-site.sh dev outputs     # Show outputs
+./scripts/deploy-static-site.sh dev validate    # Validate template
+./scripts/deploy-static-site.sh help            # Show help
 ```
 
 ### GitHub Actions Deployment
@@ -232,12 +232,15 @@ Automatic security scanning using cfn_nag for CloudFormation templates.
 │   ├── script.js                # JavaScript
 │   └── error.html               # 404 error page
 ├── cloudformation/               # Infrastructure templates
-│   └── main.yaml                # Main CloudFormation template
+│   ├── dns-ssl.yaml             # DNS & SSL CloudFormation template
+│   └── static-site.yaml         # Static site CloudFormation template
 ├── scripts/                      # Deployment scripts
-│   └── deploy.sh                # Main deployment script
+│   ├── deploy-dns-ssl.sh        # DNS & SSL deployment script
+│   └── deploy-static-site.sh    # Static site deployment script
 ├── .github/workflows/            # GitHub Actions
 │   └── deploy.yml               # Deployment workflow
-├── deploy-config.json            # Environment configuration
+├── dns-ssl-config.json           # DNS & SSL config
+├── static-site-config.json       # Static site config
 ├── package.json                  # Project metadata
 └── README.md                     # This file
 ```

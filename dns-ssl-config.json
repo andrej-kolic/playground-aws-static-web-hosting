@@ -1,6 +1,6 @@
 {
-  "infrastructure": {
-    "stackName": "static-website-infrastructure",
+  "dns_ssl": {
+    "stackName": "static-website-dsn-ssl",
     "region": "us-east-1",
     "parameters": {
       "DomainName": "andrejkolic.com",

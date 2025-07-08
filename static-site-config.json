@@ -1,0 +1,50 @@
+{
+  "dev": {
+    "stackName": "static-website-dev",
+    "region": "us-east-1",
+    "parameters": {
+      "DnsSslStackName": "static-website-dsn-ssl",
+      "SubDomain": "dev",
+      "Environment": "dev",
+      "UseSSL": "false",
+      "CreateRoute53Records": "false"
+    },
+    "tags": {
+      "Environment": "dev",
+      "Project": "StaticWebsite",
+      "Owner": "DevTeam"
+    }
+  },
+  "staging": {
+    "stackName": "static-website-staging",
+    "region": "us-east-1",
+    "parameters": {
+      "DnsSslStackName": "static-website-dsn-ssl",
+      "SubDomain": "staging",
+      "Environment": "staging",
+      "UseSSL": "true",
+      "CreateRoute53Records": "true"
+    },
+    "tags": {
+      "Environment": "staging",
+      "Project": "StaticWebsite",
+      "Owner": "DevTeam"
+    }
+  },
+  "prod": {
+    "stackName": "static-website-prod",
+    "region": "us-east-1",
+    "parameters": {
+      "DnsSslStackName": "static-website-dsn-ssl",
+      "SubDomain": "",
+      "Environment": "prod",
+      "UseSSL": "true",
+      "CreateRoute53Records": "true"
+    },
+    "tags": {
+      "Environment": "prod",
+      "Project": "StaticWebsite",
+      "Owner": "DevTeam"
+    }
+  }
+}
