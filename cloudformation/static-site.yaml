@@ -147,16 +147,8 @@ Resources:
                     - HasSubDomain
                     - !Sub "${SubDomain}."
                     - ""
-                  DomainName: !ImportValue
-                      "!Sub": "${DnsSslStackName}-DomainName"
+                  DomainName: !ImportValue "${DnsSslStackName}-DomainName"
           - !Ref "AWS::NoValue"
-        ViewerCertificate: !If
-          - UseSSLCondition
-          - AcmCertificateArn: !ImportValue
-              "!Sub": "${DnsSslStackName}-SSLCertificateArn"
-            SslSupportMethod: sni-only
-            MinimumProtocolVersion: TLSv1.2_2021
-          - CloudFrontDefaultCertificate: true
         PriceClass: PriceClass_100
         HttpVersion: http2
         IPV6Enabled: true
@@ -171,16 +163,14 @@ Resources:
     Type: AWS::Route53::RecordSet
     Condition: CreateRoute53RecordsCondition
     Properties:
-      HostedZoneId: !ImportValue
-        "!Sub": "${DnsSslStackName}-HostedZoneId"
+      HostedZoneId: !ImportValue "${DnsSslStackName}-HostedZoneId"
       Name: !Sub
         - "${Prefix}${DomainName}"
         - Prefix: !If
             - HasSubDomain
             - !Sub "${SubDomain}."
             - ""
-          DomainName: !ImportValue
-              "!Sub": "${DnsSslStackName}-DomainName"
+          DomainName: !ImportValue "${DnsSslStackName}-DomainName"
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
@@ -222,8 +212,7 @@ Outputs:
               - HasSubDomain
               - !Sub "${SubDomain}."
               - ""
-            DomainName: !ImportValue
-                "!Sub": "${DnsSslStackName}-DomainName"
+            DomainName: !ImportValue "${DnsSslStackName}-DomainName"
       - !Sub "https://${CloudFrontDistribution.DomainName}"
     Export:
       Name: !Sub "${AWS::StackName}-WebsiteURL"
