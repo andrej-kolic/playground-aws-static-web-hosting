@@ -22,13 +22,13 @@ on:
       action:
         description: 'Deployment action'
         required: true
-        default: 'deploy'
+        default: 'validate'
         type: choice
         options:
-          - deploy
-          - infra
-          - content
           - validate
+          - content
+          - infra
+          - deploy
 
 env:
   AWS_DEFAULT_REGION: us-east-1
@@ -56,7 +56,7 @@ jobs:
       - name: Validate CloudFormation template
         run: |
           aws cloudformation validate-template \
-            --template-body file://cloudformation/main.yaml \
+            --template-body file://cloudformation/static-site.yaml \
             --region ${{ env.AWS_DEFAULT_REGION }}
 
   # Deploy to development environment
@@ -84,7 +84,7 @@ jobs:
       - name: Deploy to development
         run: |
           action="${{ github.event.inputs.action || 'deploy' }}"
-          ./scripts/deploy.sh dev $action
+          ./scripts/deploy-static-site.sh dev $action
 
       - name: Comment PR with deployment info
         if: github.event_name == 'pull_request'
@@ -93,7 +93,7 @@ jobs:
           script: |
             const { execSync } = require('child_process');
             try {
-              const output = execSync('./scripts/deploy.sh dev outputs', { encoding: 'utf8' });
+              const output = execSync('./scripts/deploy-static-site.sh dev outputs', { encoding: 'utf8' });
               const websiteUrl = output.match(/Website URL: (https?:\/\/[^\s]+)/);
               
               if (websiteUrl) {
