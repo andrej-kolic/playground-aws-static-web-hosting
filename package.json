@@ -27,7 +27,7 @@
     "web:delete:prod": "./scripts/deploy-static-site.sh prod delete",
     "web:help": "./scripts/deploy-static-site.sh help",
     "serve": "python3 -m http.server 8000 --directory src",
-    "lint:web:cf": "cfn-lint cloudformation/dns-ssl.yaml cloudformation/static-site.yaml",
+    "lint:cf": "cfn-lint cloudformation/dns-ssl.yaml cloudformation/static-site.yaml",
     "security:scan": "cfn_nag_scan --input-path cloudformation/dns-ssl.yaml && cfn_nag_scan --input-path cloudformation/static-site.yaml"
   },
   "repository": {
