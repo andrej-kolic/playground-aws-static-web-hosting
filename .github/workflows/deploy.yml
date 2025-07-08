@@ -1,34 +1,34 @@
 name: Deploy Static Website
 
 on:
-  # push:
-  #   branches:
-  #     - main
-  #     - develop
-  # pull_request:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
-    # inputs:
-    #   environment:
-    #     description: 'Deployment environment'
-    #     required: true
-    #     default: 'dev'
-    #     type: choice
-    #     options:
-    #       - dev
-    #       - staging
-    #       - prod
-    #   action:
-    #     description: 'Deployment action'
-    #     required: true
-    #     default: 'validate'
-    #     type: choice
-    #     options:
-    #       - validate
-    #       - content
-    #       - infra
-    #       - deploy
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      action:
+        description: 'Deployment action'
+        required: true
+        default: 'validate'
+        type: choice
+        options:
+          - validate
+          - content
+          - infra
+          - deploy
 
 env:
   AWS_DEFAULT_REGION: us-east-1
@@ -65,53 +65,53 @@ jobs:
             --region ${{ env.AWS_DEFAULT_REGION }}
 
   # Deploy to development environment
-  # deploy-dev:
-  #   runs-on: ubuntu-latest
-  #   needs: validate
-  #   if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
-  #   environment: development
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+  deploy-dev:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    environment: development
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ env.AWS_DEFAULT_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
-  #     - name: Install dependencies
-  #       run: |
-  #         sudo apt-get update
-  #         sudo apt-get install -y jq
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
 
-  #     - name: Deploy to development
-  #       run: |
-  #         action="${{ github.event.inputs.action || 'deploy' }}"
-  #         ./scripts/deploy-static-site.sh dev $action
+      - name: Deploy to development
+        run: |
+          action="${{ github.event.inputs.action || 'deploy' }}"
+          ./scripts/deploy-static-site.sh dev $action
 
-  #     - name: Comment PR with deployment info
-  #       if: github.event_name == 'pull_request'
-  #       uses: actions/github-script@v7
-  #       with:
-  #         script: |
-  #           const { execSync } = require('child_process');
-  #           try {
-  #             const output = execSync('./scripts/deploy-static-site.sh dev outputs', { encoding: 'utf8' });
-  #             const websiteUrl = output.match(/Website URL: (https?:\/\/[^\s]+)/);
+      - name: Comment PR with deployment info
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            try {
+              const output = execSync('./scripts/deploy-static-site.sh dev outputs', { encoding: 'utf8' });
+              const websiteUrl = output.match(/Website URL: (https?:\/\/[^\s]+)/);
               
-  #             if (websiteUrl) {
-  #               github.rest.issues.createComment({
-  #                 issue_number: context.issue.number,
-  #                 owner: context.repo.owner,
-  #                 repo: context.repo.repo,
-  #                 body: `🚀 **Development Environment Deployed**\n\n**Website URL:** ${websiteUrl[1]}\n\n*This deployment is automatically updated with each push to this PR.*`
-  #               });
-  #             }
-  #           } catch (error) {
-  #             console.log('Could not get deployment info:', error.message);
-  #           }
+              if (websiteUrl) {
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `🚀 **Development Environment Deployed**\n\n**Website URL:** ${websiteUrl[1]}\n\n*This deployment is automatically updated with each push to this PR.*`
+                });
+              }
+            } catch (error) {
+              console.log('Could not get deployment info:', error.message);
+            }
 
   # # Deploy to staging environment
   # deploy-staging:
