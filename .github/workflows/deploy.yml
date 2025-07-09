@@ -272,7 +272,7 @@ jobs:
   #     - name: Check for configuration drift
   #       run: |
   #         # Get stack name from config
-  #         STACK_NAME=$(jq -r ".\"${{ matrix.environment }}\".stackName" static-site-config.json)
+  #         STACK_NAME=$(jq -r ".\"${{ matrix.environment }}\".stackName" config-static-site.json)
 
   #         # Check if stack exists and get drift status
   #         if aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region ${{ env.AWS_DEFAULT_REGION }} &>/dev/null; then

@@ -46,7 +46,7 @@ cd <repo-dir> # for example 'aws-static-web-hosting'
 
 ### 2. Update Configuration
 
-Edit `static-site-config.json` with your domain and preferences:
+Edit `config-static-site.json` with your domain and preferences:
 
 ```json
 {
@@ -90,7 +90,7 @@ Edit `static-site-config.json` with your domain and preferences:
 
 ### Environment Configuration
 
-The `static-site-config.json` file contains environment-specific settings:
+The `config-static-site.json` file contains environment-specific settings:
 
 ```json
 {
@@ -240,7 +240,7 @@ Automatic security scanning using cfn_nag for CloudFormation templates.
 ├── .github/workflows/            # GitHub Actions
 │   └── deploy.yml               # Deployment workflow
 ├── dns-ssl-config.json           # DNS & SSL config
-├── static-site-config.json       # Static site config
+├── config-static-site.json       # Static site config
 ├── package.json                  # Project metadata
 └── README.md                     # This file
 ```

@@ -59,7 +59,7 @@
     "scripts/",
     ".github/",
     "dns-ssl-config.json",
-    "static-site-config.json",
+    "config-static-site.json",
     "README.md"
   ],
   "packageManager": "pnpm@10.8.0"

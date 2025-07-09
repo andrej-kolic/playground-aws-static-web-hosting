@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 # Default values
 ENVIRONMENT=${1:-dev}
 ACTION=${2:-deploy}
-CONFIG_FILE="static-site-config.json"
+CONFIG_FILE="config-static-site.json"
 CF_TEMPLATE="cloudformation/static-site.yaml"
 SOURCE_DIR="src"
 
