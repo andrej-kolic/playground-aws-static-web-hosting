@@ -225,89 +225,89 @@ jobs:
         with:
           input_path: cloudformation/static-site.yaml
 
-  # Cost estimation (requires Infracost)
-  cost-estimate:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  # # Cost estimation (requires Infracost)
+  # cost-estimate:
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'pull_request'
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Setup Infracost
-        uses: infracost/actions/setup@v2
-        with:
-          api-key: ${{ secrets.INFRACOST_API_KEY }}
+  #     - name: Setup Infracost
+  #       uses: infracost/actions/setup@v2
+  #       with:
+  #         api-key: ${{ secrets.INFRACOST_API_KEY }}
 
-      - name: Generate cost estimate
-        run: |
-          # Convert CloudFormation to Terraform for cost estimation
-          # This is a placeholder - you would need to implement CF to TF conversion
-          # or use a different cost estimation tool
-          echo "Cost estimation would be implemented here"
-          # infracost breakdown --path=cloudformation/static-site.yaml
+  #     - name: Generate cost estimate
+  #       run: |
+  #         # Convert CloudFormation to Terraform for cost estimation
+  #         # This is a placeholder - you would need to implement CF to TF conversion
+  #         # or use a different cost estimation tool
+  #         echo "Cost estimation would be implemented here"
+  #         # infracost breakdown --path=cloudformation/static-site.yaml
 
-  # Drift detection
-  drift-detection:
-    runs-on: ubuntu-latest
-    # if: github.event_name == 'schedule'
-    strategy:
-      matrix:
-        environment: [dev, staging, prod]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  # # Drift detection
+  # drift-detection:
+  #   runs-on: ubuntu-latest
+  #   # if: github.event_name == 'schedule'
+  #   strategy:
+  #     matrix:
+  #       environment: [dev, staging, prod]
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y jq
 
-      - name: Check for configuration drift
-        run: |
-          # Get stack name from config
-          STACK_NAME=$(jq -r ".\"${{ matrix.environment }}\".stackName" static-site-config.json)
+  #     - name: Check for configuration drift
+  #       run: |
+  #         # Get stack name from config
+  #         STACK_NAME=$(jq -r ".\"${{ matrix.environment }}\".stackName" static-site-config.json)
 
-          # Check if stack exists and get drift status
-          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region ${{ env.AWS_DEFAULT_REGION }} &>/dev/null; then
-            echo "Checking drift for stack: $STACK_NAME"
+  #         # Check if stack exists and get drift status
+  #         if aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region ${{ env.AWS_DEFAULT_REGION }} &>/dev/null; then
+  #           echo "Checking drift for stack: $STACK_NAME"
 
-            # Start drift detection
-            DRIFT_ID=$(aws cloudformation detect-stack-drift \
-              --stack-name "$STACK_NAME" \
-              --region ${{ env.AWS_DEFAULT_REGION }} \
-              --query 'StackDriftDetectionId' \
-              --output text)
+  #           # Start drift detection
+  #           DRIFT_ID=$(aws cloudformation detect-stack-drift \
+  #             --stack-name "$STACK_NAME" \
+  #             --region ${{ env.AWS_DEFAULT_REGION }} \
+  #             --query 'StackDriftDetectionId' \
+  #             --output text)
 
-            echo "Drift detection ID: $DRIFT_ID"
+  #           echo "Drift detection ID: $DRIFT_ID"
 
-            # Wait for drift detection to complete
-            aws cloudformation wait stack-drift-detection-complete \
-              --stack-drift-detection-id "$DRIFT_ID" \
-              --region ${{ env.AWS_DEFAULT_REGION }}
+  #           # Wait for drift detection to complete
+  #           aws cloudformation wait stack-drift-detection-complete \
+  #             --stack-drift-detection-id "$DRIFT_ID" \
+  #             --region ${{ env.AWS_DEFAULT_REGION }}
 
-            # Get drift results
-            DRIFT_STATUS=$(aws cloudformation describe-stack-drift-detection-status \
-              --stack-drift-detection-id "$DRIFT_ID" \
-              --region ${{ env.AWS_DEFAULT_REGION }} \
-              --query 'StackDriftStatus' \
-              --output text)
+  #           # Get drift results
+  #           DRIFT_STATUS=$(aws cloudformation describe-stack-drift-detection-status \
+  #             --stack-drift-detection-id "$DRIFT_ID" \
+  #             --region ${{ env.AWS_DEFAULT_REGION }} \
+  #             --query 'StackDriftStatus' \
+  #             --output text)
 
-            echo "Drift status for ${{ matrix.environment }}: $DRIFT_STATUS"
+  #           echo "Drift status for ${{ matrix.environment }}: $DRIFT_STATUS"
 
-            if [ "$DRIFT_STATUS" != "IN_SYNC" ]; then
-              echo "⚠️ Configuration drift detected in ${{ matrix.environment }} environment!"
-              # You could send notifications here
-            else
-              echo "✅ No configuration drift detected in ${{ matrix.environment }} environment"
-            fi
-          else
-            echo "Stack $STACK_NAME does not exist in ${{ matrix.environment }} environment"
-          fi
+  #           if [ "$DRIFT_STATUS" != "IN_SYNC" ]; then
+  #             echo "⚠️ Configuration drift detected in ${{ matrix.environment }} environment!"
+  #             # You could send notifications here
+  #           else
+  #             echo "✅ No configuration drift detected in ${{ matrix.environment }} environment"
+  #           fi
+  #         else
+  #           echo "Stack $STACK_NAME does not exist in ${{ matrix.environment }} environment"
+  #         fi
 
