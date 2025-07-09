@@ -228,7 +228,7 @@ jobs:
   # Drift detection
   drift-detection:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
+    # if: github.event_name == 'schedule'
     strategy:
       matrix:
         environment: [dev, staging, prod]
