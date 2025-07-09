@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 
 # Default values
 ACTION=${1:-deploy}
-CONFIG_FILE="dns-ssl-config.json"
+CONFIG_FILE="config-dns-ssl.json"
 CF_TEMPLATE="cloudformation/dns-ssl.yaml"
 CONFIG_ROOT="dns_ssl"
 

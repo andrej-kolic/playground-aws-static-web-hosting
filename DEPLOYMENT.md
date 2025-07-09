@@ -57,7 +57,7 @@ After the DNS & SSL stack is deployed and DNS is properly configured, deploy you
 
 ## Configuration Files
 
-### dns-ssl-config.json
+### config-dns-ssl.json
 Configuration for the shared DNS & SSL stack:
 ```json
 {
@@ -72,7 +72,7 @@ Configuration for the shared DNS & SSL stack:
 }
 ```
 
-### static-site-config.json
+### config-static-site.json
 Configuration for environment-specific stacks:
 ```json
 {

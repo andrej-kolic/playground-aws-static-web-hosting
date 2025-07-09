@@ -58,7 +58,7 @@
     "cloudformation/",
     "scripts/",
     ".github/",
-    "dns-ssl-config.json",
+    "config-dns-ssl.json",
     "config-static-site.json",
     "README.md"
   ],

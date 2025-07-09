@@ -239,7 +239,7 @@ Automatic security scanning using cfn_nag for CloudFormation templates.
 │   └── deploy-static-site.sh    # Static site deployment script
 ├── .github/workflows/            # GitHub Actions
 │   └── deploy.yml               # Deployment workflow
-├── dns-ssl-config.json           # DNS & SSL config
+├── config-dns-ssl.json           # DNS & SSL config
 ├── config-static-site.json       # Static site config
 ├── package.json                  # Project metadata
 └── README.md                     # This file
