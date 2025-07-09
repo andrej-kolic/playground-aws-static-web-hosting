@@ -1,0 +1,146 @@
+name: Deploy DNS & SSL Stack
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to perform"
+        required: true
+        default: "deploy"
+        type: choice
+        options:
+          - deploy
+          - delete
+          - status
+          - validate
+    #   environment:
+    #     description: 'Environment to deploy to'
+    #     required: true
+    #     default: 'production'
+    #     type: choice
+    #     options:
+    #       - production
+    #       - staging
+
+  # Trigger on pushes to main branch that modify DNS/SSL related files
+  push:
+    branches:
+      - main
+    paths:
+      - "cloudformation/dns-ssl.yaml"
+      - "config-dns-ssl.json"
+      - "scripts/deploy-dns-ssl.sh"
+      - ".github/workflows/deploy-dns-ssl.yaml"
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy-dns-ssl:
+    name: Deploy DNS & SSL Infrastructure
+    runs-on: ubuntu-latest
+
+    # Set environment for deployment
+    # environment: ${{ github.event.inputs.environment || 'production' }}
+
+    # permissions:
+    #   id-token: write   # Required for OIDC
+    #   contents: read    # Required to checkout code
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      #   - name: Configure AWS Credentials (OIDC)
+      #     uses: aws-actions/configure-aws-credentials@v4
+      #     with:
+      #       role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+      #       role-session-name: GitHubActions-DNS-SSL-Deploy
+      #       aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install Dependencies
+        run: |
+          # jq is already installed on GitHub runners
+          echo "Verifying dependencies..."
+          jq --version
+          aws --version
+
+      - name: Validate Configuration
+        run: |
+          echo "Validating configuration files..."
+          if [ ! -f "config-dns-ssl.json" ]; then
+            echo "Error: config-dns-ssl.json not found"
+            exit 1
+          fi
+
+          if [ ! -f "cloudformation/dns-ssl.yaml" ]; then
+            echo "Error: cloudformation/dns-ssl.yaml not found"
+            exit 1
+          fi
+
+          # Validate JSON syntax
+          jq empty config-dns-ssl.json
+          echo "Configuration validation passed"
+
+      - name: Validate CloudFormation Template
+        run: |
+          echo "Validating CloudFormation template..."
+          chmod +x scripts/deploy-dns-ssl.sh
+          ./scripts/deploy-dns-ssl.sh validate
+
+      - name: Deploy DNS & SSL Stack
+        if: ${{ github.event.inputs.action == 'deploy' || github.event.inputs.action == '' || github.event_name == 'push' }}
+        run: |
+          echo "Deploying DNS & SSL stack..."
+          ./scripts/deploy-dns-ssl.sh deploy
+
+      - name: Delete DNS & SSL Stack
+        if: ${{ github.event.inputs.action == 'delete' }}
+        run: |
+          echo "Deleting DNS & SSL stack..."
+          # For safety, we'll use a different approach for deletion in CI
+          # to avoid accidental deletions
+          echo "WARNING: Stack deletion requested"
+          echo "Stack deletion should be performed manually for safety"
+          echo "Use: ./scripts/deploy-dns-ssl.sh delete"
+          exit 1
+
+      - name: Get Stack Status
+        if: ${{ github.event.inputs.action == 'status' }}
+        run: |
+          echo "Getting DNS & SSL stack status..."
+          ./scripts/deploy-dns-ssl.sh status
+
+      - name: Get Stack Outputs
+        if: ${{ github.event.inputs.action == 'deploy' || github.event.inputs.action == '' || github.event_name == 'push' }}
+        run: |
+          echo "Getting stack outputs..."
+          STACK_NAME=$(jq -r '.dns_ssl.stackName' config-dns-ssl.json)
+          aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue,Description]' \
+            --output table || echo "No outputs available"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## DNS & SSL Stack Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action**: ${{ github.event.inputs.action || 'deploy' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "- **Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
