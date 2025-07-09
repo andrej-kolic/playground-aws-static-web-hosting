@@ -1,0 +1,239 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Static Website Hosting with S3, CloudFront, and Route53"
+
+Parameters:
+  DnsSslStackName:
+    Type: String
+    Description: "Name of the shared dns-ssl stack containing hosted zone and SSL certificate"
+    Default: "static-website-dns-ssl"
+
+  SubDomain:
+    Type: String
+    Description: "Subdomain for the website (e.g., www, dev, staging)"
+    Default: "dev"
+
+  Environment:
+    Type: String
+    Description: "Environment name"
+    Default: "dev"
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+  UseSSL:
+    Type: String
+    Description: "Whether to use SSL certificate from dns-ssl stack"
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+
+  CreateRoute53Records:
+    Type: String
+    Description: "Whether to create Route53 DNS records"
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+
+Conditions:
+  UseSSLCondition: !Equals [!Ref UseSSL, "true"]
+  CreateRoute53RecordsCondition: !Equals [!Ref CreateRoute53Records, "true"]
+  HasSubDomain: !Not [!Equals [!Ref SubDomain, ""]]
+
+Resources:
+  # S3 Bucket for website content
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-${AWS::AccountId}"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: "StaticWebsite"
+
+  # S3 Bucket Policy
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "${WebsiteBucket.Arn}/*"
+          - Sid: AllowCloudFrontAccess
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: "s3:GetObject"
+            Resource: !Sub "${WebsiteBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/*"
+
+  # CloudFront Origin Access Control
+  CloudFrontOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-OAC"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+        Description: "OAC for static website"
+
+  # CloudFront Distribution
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt WebsiteBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+            OriginAccessControlId: !Ref CloudFrontOriginAccessControl
+        Enabled: true
+        DefaultRootObject: index.html
+        Comment: !Sub "CloudFront distribution for ${AWS::StackName}"
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          Compress: true
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+          MinTTL: 0
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 300
+        Aliases: !If
+          - UseSSLCondition
+          - - !Sub
+              - "${Prefix}${DomainName}"
+              - Prefix: !If
+                  - HasSubDomain
+                  - !Sub "${SubDomain}."
+                  - ""
+                DomainName:
+                  Fn::ImportValue:
+                    "Fn::Sub": "${DnsSslStackName}-DomainName"
+          - !Ref "AWS::NoValue"
+        ViewerCertificate: !If
+          - UseSSLCondition
+          - AcmCertificateArn: !ImportValue
+              "Fn::Sub": "${DnsSslStackName}-SSLCertificateArn"
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          - CloudFrontDefaultCertificate: true
+        PriceClass: PriceClass_100
+        HttpVersion: http2
+        IPV6Enabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: "StaticWebsite"
+
+  # Route53 DNS Record
+  Route53RecordSet:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateRoute53RecordsCondition
+    Properties:
+      HostedZoneId:
+        Fn::ImportValue:
+          "Fn::Sub": "${DnsSslStackName}-HostedZoneId"
+
+      Name: !Sub
+        - "${Prefix}${DomainName}"
+        - Prefix: !If
+            - HasSubDomain
+            - !Sub "${SubDomain}."
+            - ""
+          DomainName:
+            Fn::ImportValue:
+              "Fn::Sub": "${DnsSslStackName}-DomainName"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2 # CloudFront hosted zone ID
+        EvaluateTargetHealth: false
+
+Outputs:
+  WebsiteBucketName:
+    Description: "Name of the S3 bucket"
+    Value: !Ref WebsiteBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-BucketName"
+
+  WebsiteBucketArn:
+    Description: "ARN of the S3 bucket"
+    Value: !GetAtt WebsiteBucket.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-BucketArn"
+
+  CloudFrontDistributionId:
+    Description: "CloudFront Distribution ID"
+    Value: !Ref CloudFrontDistribution
+    Export:
+      Name: !Sub "${AWS::StackName}-DistributionId"
+
+  CloudFrontDomainName:
+    Description: "CloudFront Distribution Domain Name"
+    Value: !GetAtt CloudFrontDistribution.DomainName
+    Export:
+      Name: !Sub "${AWS::StackName}-DistributionDomainName"
+
+  WebsiteURL:
+    Description: "Website URL"
+    Value: !If
+      - UseSSLCondition
+      - !Sub
+        - "https://${Prefix}${DomainName}"
+        - Prefix: !If
+            - HasSubDomain
+            - !Sub "${SubDomain}."
+            - ""
+          DomainName:
+            Fn::ImportValue:
+              "Fn::Sub": "${DnsSslStackName}-DomainName"
+      - !Sub "https://${CloudFrontDistribution.DomainName}"
+    Export:
+      Name: !Sub "${AWS::StackName}-WebsiteURL"
+
+  DnsSslStackName:
+    Description: "DnsSsl stack name used for shared resources"
+    Value: !Ref DnsSslStackName
+    Export:
+      Name: !Sub "${AWS::StackName}-DnsSslStackName"

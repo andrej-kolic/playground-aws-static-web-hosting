@@ -1,0 +1,15 @@
+{
+  "dns_ssl": {
+    "stackName": "static-website-dns-ssl",
+    "region": "us-east-1",
+    "parameters": {
+      "DomainName": "andrejkolic.com",
+      "CreateWildcardCertificate": "true"
+    },
+    "tags": {
+      "Project": "StaticWebsite",
+      "Purpose": "SharedInfrastructure",
+      "Owner": "DevTeam"
+    }
+  }
+}

@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Shared Infrastructure for Static Website - Hosted Zone and SSL Certificate"
+
+Parameters:
+  DomainName:
+    Type: String
+    Description: "Domain name for the website (e.g., example.com)"
+    Default: "example.com"
+
+  CreateWildcardCertificate:
+    Type: String
+    Description: "Whether to create a wildcard SSL certificate for all subdomains"
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+
+Resources:
+  # Route53 Hosted Zone
+  HostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Ref DomainName
+      HostedZoneConfig:
+        Comment: !Sub "Hosted zone for ${DomainName} - shared across environments"
+      HostedZoneTags:
+        - Key: Project
+          Value: "StaticWebsite"
+        - Key: Purpose
+          Value: "SharedInfrastructure"
+
+  # SSL Certificate (wildcard to support all subdomains)
+  SSLCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !If
+        - CreateWildcard
+        - !Sub "*.${DomainName}"
+        - !Ref DomainName
+      SubjectAlternativeNames: !If
+        - CreateWildcard
+        - - !Ref DomainName
+        - !Ref "AWS::NoValue"
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !If
+            - CreateWildcard
+            - !Sub "*.${DomainName}"
+            - !Ref DomainName
+          HostedZoneId: !Ref HostedZone
+      Tags:
+        - Key: Project
+          Value: "StaticWebsite"
+        - Key: Purpose
+          Value: "SharedInfrastructure"
+
+Conditions:
+  CreateWildcard: !Equals [!Ref CreateWildcardCertificate, "true"]
+
+Outputs:
+  HostedZoneId:
+    Description: "Route53 Hosted Zone ID"
+    Value: !Ref HostedZone
+    Export:
+      Name: !Sub "${AWS::StackName}-HostedZoneId"
+
+  HostedZoneName:
+    Description: "Route53 Hosted Zone Name"
+    Value: !Ref DomainName
+    Export:
+      Name: !Sub "${AWS::StackName}-HostedZoneName"
+
+  SSLCertificateArn:
+    Description: "SSL Certificate ARN"
+    Value: !Ref SSLCertificate
+    Export:
+      Name: !Sub "${AWS::StackName}-SSLCertificateArn"
+
+  NameServers:
+    Description: "Name servers for the hosted zone"
+    Value: !Join [", ", !GetAtt HostedZone.NameServers]
+    Export:
+      Name: !Sub "${AWS::StackName}-NameServers"
+
+  DomainName:
+    Description: "Domain name"
+    Value: !Ref DomainName
+    Export:
+      Name: !Sub "${AWS::StackName}-DomainName"
