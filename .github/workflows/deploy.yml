@@ -45,9 +45,6 @@ jobs:
           echo "github.event.inputs.environment: ${{ github.event.inputs.environment }}"
           echo "github.event.inputs.action: ${{ github.event.inputs.action }}"
 
-      - name: Log
-        run: echo "Start validation job..."
-
       - name: Checkout code
         uses: actions/checkout@v4
 
