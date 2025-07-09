@@ -140,15 +140,23 @@ Resources:
             ErrorCachingMinTTL: 300
         Aliases: !If
           - UseSSLCondition
-          -
-            - !Sub
-                - "${Prefix}${DomainName}"
-                - Prefix: !If
-                    - HasSubDomain
-                    - !Sub "${SubDomain}."
-                    - ""
-                  DomainName: !ImportValue "${DnsSslStackName}-DomainName"
+          - - !Sub
+              - "${Prefix}${DomainName}"
+              - Prefix: !If
+                  - HasSubDomain
+                  - !Sub "${SubDomain}."
+                  - ""
+                DomainName:
+                  Fn::ImportValue:
+                    "Fn::Sub": "${DnsSslStackName}-DomainName"
           - !Ref "AWS::NoValue"
+        ViewerCertificate: !If
+          - UseSSLCondition
+          - AcmCertificateArn: !ImportValue
+              "Fn::Sub": "${DnsSslStackName}-SSLCertificateArn"
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          - CloudFrontDefaultCertificate: true
         PriceClass: PriceClass_100
         HttpVersion: http2
         IPV6Enabled: true
@@ -163,14 +171,19 @@ Resources:
     Type: AWS::Route53::RecordSet
     Condition: CreateRoute53RecordsCondition
     Properties:
-      HostedZoneId: !ImportValue "${DnsSslStackName}-HostedZoneId"
+      HostedZoneId:
+        Fn::ImportValue:
+          "Fn::Sub": "${DnsSslStackName}-HostedZoneId"
+
       Name: !Sub
         - "${Prefix}${DomainName}"
         - Prefix: !If
             - HasSubDomain
             - !Sub "${SubDomain}."
             - ""
-          DomainName: !ImportValue "${DnsSslStackName}-DomainName"
+          DomainName:
+            Fn::ImportValue:
+              "Fn::Sub": "${DnsSslStackName}-DomainName"
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
@@ -207,12 +220,14 @@ Outputs:
     Value: !If
       - UseSSLCondition
       - !Sub
-          - "https://${Prefix}${DomainName}"
-          - Prefix: !If
-              - HasSubDomain
-              - !Sub "${SubDomain}."
-              - ""
-            DomainName: !ImportValue "${DnsSslStackName}-DomainName"
+        - "https://${Prefix}${DomainName}"
+        - Prefix: !If
+            - HasSubDomain
+            - !Sub "${SubDomain}."
+            - ""
+          DomainName:
+            Fn::ImportValue:
+              "Fn::Sub": "${DnsSslStackName}-DomainName"
       - !Sub "https://${CloudFrontDistribution.DomainName}"
     Export:
       Name: !Sub "${AWS::StackName}-WebsiteURL"
