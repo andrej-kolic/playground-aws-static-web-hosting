@@ -3,7 +3,7 @@
     "stackName": "static-website-dev",
     "region": "us-east-1",
     "parameters": {
-      "DnsSslStackName": "static-website-dsn-ssl",
+      "DnsSslStackName": "static-website-dns-ssl",
       "SubDomain": "dev",
       "Environment": "dev",
       "UseSSL": "false",
@@ -19,7 +19,7 @@
     "stackName": "static-website-staging",
     "region": "us-east-1",
     "parameters": {
-      "DnsSslStackName": "static-website-dsn-ssl",
+      "DnsSslStackName": "static-website-dns-ssl",
       "SubDomain": "staging",
       "Environment": "staging",
       "UseSSL": "true",
@@ -35,7 +35,7 @@
     "stackName": "static-website-prod",
     "region": "us-east-1",
     "parameters": {
-      "DnsSslStackName": "static-website-dsn-ssl",
+      "DnsSslStackName": "static-website-dns-ssl",
       "SubDomain": "",
       "Environment": "prod",
       "UseSSL": "true",

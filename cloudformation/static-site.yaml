@@ -5,7 +5,7 @@ Parameters:
   DnsSslStackName:
     Type: String
     Description: "Name of the shared dns-ssl stack containing hosted zone and SSL certificate"
-    Default: "static-website-dsn-ssl"
+    Default: "static-website-dns-ssl"
 
   SubDomain:
     Type: String
