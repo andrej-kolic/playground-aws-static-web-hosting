@@ -38,6 +38,13 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
+      - name: Log input parameters
+        run: |
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
+          echo "github.event.inputs.environment: ${{ github.event.inputs.environment }}"
+          echo "github.event.inputs.action: ${{ github.event.inputs.action }}"
+
       - name: Log
         run: echo "Start validation job..."
 
