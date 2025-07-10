@@ -58,7 +58,8 @@ Edit `deploy-config.json` with your domain and preferences:
       "SubDomain": "dev",
       "Environment": "dev",
       "CreateSSLCertificate": "false",
-      "CreateRoute53Records": "false"
+      "CreateRoute53Records": "false",
+      "HostedZoneId": "your-hosted-zone-id"
     }
   }
 }
@@ -102,7 +103,8 @@ The `deploy-config.json` file contains environment-specific settings:
       "SubDomain": "www",
       "Environment": "prod",
       "CreateSSLCertificate": "true",
-      "CreateRoute53Records": "true"
+      "CreateRoute53Records": "true",
+      "HostedZoneId": "Z3DG6IL3SJCGPX",
     },
     "tags": {
       "Environment": "prod",
@@ -122,6 +124,7 @@ The `deploy-config.json` file contains environment-specific settings:
 | `Environment` | Environment name | `dev` | Yes |
 | `CreateSSLCertificate` | Create SSL cert | `false` | Yes |
 | `CreateRoute53Records` | Create DNS records | `false` | Yes |
+| `HostedZoneId` | Hosted zone id |  | Yes |
 
 ## 🚀 Deployment Options
 
@@ -226,20 +229,22 @@ Automatic security scanning using cfn_nag for CloudFormation templates.
 
 ```
 .
-├── src/                          # Website source files
-│   ├── index.html               # Main HTML file
-│   ├── styles.css               # CSS styles
-│   ├── script.js                # JavaScript
-│   └── error.html               # 404 error page
-├── cloudformation/               # Infrastructure templates
-│   └── main.yaml                # Main CloudFormation template
-├── scripts/                      # Deployment scripts
-│   └── deploy.sh                # Main deployment script
-├── .github/workflows/            # GitHub Actions
-│   └── deploy.yml               # Deployment workflow
-├── deploy-config.json            # Environment configuration
-├── package.json                  # Project metadata
-└── README.md                     # This file
+├── .github/workflows/           # GitHub Actions
+│   └── deploy.yml                 # Deployment workflow
+├── src/                         # Website source files
+│   ├── index.html                 # Main HTML file
+│   ├── styles.css                 # CSS styles
+│   ├── script.js                  # JavaScript
+│   └── error.html                 # 404 error page
+├── cloudformation/              # Infrastructure templates
+│   └── main.yaml                  # Main CloudFormation template
+├── scripts/                     # Deployment scripts
+│   ├── deploy.sh                  # Main deployment script
+│   └── create-hosted-zone.sh      # Hosted zone deployment script
+├── deploy-config.json           # Environment configuration
+├── DNS-SETUP.md                 # Hosted zone creation guide
+├── package.json                 # Project metadata
+└── README.md                    # This file
 ```
 
 ## 🐛 Troubleshooting

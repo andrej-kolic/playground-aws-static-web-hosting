@@ -4,6 +4,9 @@
 # Usage: ./scripts/deploy.sh [environment] [action]
 # Example: ./scripts/deploy.sh dev deploy
 
+# Disable automatic pagination for AWS CLI commands
+export AWS_PAGER=""
+
 set -e
 
 # Colors for output
