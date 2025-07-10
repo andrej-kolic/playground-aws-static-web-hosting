@@ -6,8 +6,9 @@
       "DomainName": "andrejkolic.com",
       "SubDomain": "dev",
       "Environment": "dev",
-      "CreateSSLCertificate": "false",
-      "CreateRoute53Records": "false"
+      "CreateSSLCertificate": "true",
+      "CreateRoute53Records": "true",
+      "HostedZoneId": "Z00295123IDZ7CVMX671W"
     },
     "tags": {
       "Environment": "dev",
@@ -23,7 +24,8 @@
       "SubDomain": "staging",
       "Environment": "staging",
       "CreateSSLCertificate": "true",
-      "CreateRoute53Records": "true"
+      "CreateRoute53Records": "true",
+      "HostedZoneId": "Z00295123IDZ7CVMX671W"
     },
     "tags": {
       "Environment": "staging",
@@ -36,10 +38,11 @@
     "region": "us-east-1",
     "parameters": {
       "DomainName": "andrejkolic.com",
-      "SubDomain": "www",
+      "SubDomain": "",
       "Environment": "prod",
       "CreateSSLCertificate": "true",
-      "CreateRoute53Records": "true"
+      "CreateRoute53Records": "true",
+      "HostedZoneId": "Z00295123IDZ7CVMX671W"
     },
     "tags": {
       "Environment": "prod",
