@@ -250,7 +250,7 @@ jobs:
       - name: Check for configuration drift
         run: |
           env="${{ github.event.inputs.environment || 'prod' }}"
-          ./scripts/drift_detection.sh $env
+          ./scripts/drift-detection.sh $env
 
       # - name: Check for configuration drift
       #   run: |
