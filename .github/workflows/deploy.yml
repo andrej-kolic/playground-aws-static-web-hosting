@@ -3,9 +3,9 @@ name: Deploy Static Website
 on:
   schedule:
     # Runs 5 minutes from now (update this as needed)
-    # - cron: '*/5 * * * *'
+    - cron: '*/2 * * * *'
 
-    - cron: '10 15 11 7 *'
+    # - cron: '10 15 11 7 *'
   push:
     branches:
       - main
