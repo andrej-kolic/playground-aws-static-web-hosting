@@ -1,6 +1,9 @@
 name: Deploy Static Website
 
 on:
+  schedule:
+    # Runs every day at 05:30 UTC
+    - cron: '01 15 * * *'
   push:
     branches:
       - main
@@ -227,7 +230,7 @@ jobs:
   # Drift detection
   drift-detection:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' # TODO: Add action condition
     # strategy:
     #   matrix:
     #     environment: [dev, staging, prod]
@@ -294,3 +297,25 @@ jobs:
       #       echo "Stack $STACK_NAME does not exist in ${{ matrix.environment }} environment"
       #     fi
 
+  # Drift detection
+  drift-detection-scheduled:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    strategy:
+      matrix:
+        environment: [dev, staging, prod]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Check for configuration drift
+        run: |
+          env="${{ matrix.environment }}"
+          ./scripts/drift-detection.sh $env
