@@ -34,6 +34,7 @@ on:
           - infra
           - content
           - validate
+          - drift-detection
 
 env:
   AWS_DEFAULT_REGION: us-east-1
@@ -217,7 +218,7 @@ jobs:
   # Drift detection
   drift-detection:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' # TODO: Add action condition
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'drift-detection'
 
     # use matrix strategy if scheduling this job (env available with `matrix.environment`)
     # if: github.event_name == 'schedule'
