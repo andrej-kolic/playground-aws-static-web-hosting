@@ -4,10 +4,10 @@ on:
   # schedule:
   #   - cron: '*/2 * * * *'
   #   # - cron: '10 15 11 7 *'
-  # push:
-  #   branches:
-  #     - main
-  #     - develop
+  push:
+    branches:
+      - main
+      - develop
   pull_request:
     branches:
       - main
@@ -25,7 +25,7 @@ on:
       action:
         description: 'Deployment action'
         required: true
-        default: 'deploy'
+        default: 'content'
         type: choice
 
         options:
@@ -87,7 +87,7 @@ jobs:
 
       - name: Deploy to development
         run: |
-          action="${{ github.event.inputs.action || 'deploy' }}"
+          action="${{ github.event.inputs.action || 'content' }}"
           ./scripts/deploy.sh dev $action
 
       - name: Comment PR with deployment info
