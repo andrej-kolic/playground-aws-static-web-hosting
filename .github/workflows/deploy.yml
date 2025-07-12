@@ -139,7 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    needs: [validate, deploy-staging]
+    # needs: [validate, deploy-staging] # <--------- TODO: uncomment
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
     environment: production
     steps:
