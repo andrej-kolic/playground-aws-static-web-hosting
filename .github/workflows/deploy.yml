@@ -161,12 +161,11 @@ jobs:
       # TODO: test release creation
       - name: Create GitHub release
         # if: github.event.inputs.action == 'deploy' || github.event.inputs.action == ''
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy'
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: release-${{ github.run_number }}
-          release_name: Production Release ${{ github.run_number }}
+          name: Production Release ${{ github.run_number }}
           body: |
             🚀 **Production Deployment**
 
@@ -178,6 +177,8 @@ jobs:
             **Workflow:** ${{ github.workflow }}
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Security and compliance checks
   security-scan:
