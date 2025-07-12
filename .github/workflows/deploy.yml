@@ -27,6 +27,8 @@ on:
         required: true
         default: 'deploy'
         type: choice
+
+        # TODO: add descriptive names to options; add drift detection
         options:
           - deploy
           - infra
@@ -60,11 +62,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y jq
-
       - name: Validate CloudFormation template
         run: |
           aws cloudformation validate-template \
@@ -87,11 +84,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
-
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y jq
 
       - name: Deploy to development
         run: |
@@ -137,11 +129,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y jq
-
       - name: Deploy to staging
         run: |
           action="${{ github.event.inputs.action || 'deploy' }}"
@@ -164,18 +151,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y jq
-
       - name: Deploy to production
         run: |
           action="${{ github.event.inputs.action || 'deploy' }}"
           ./scripts/deploy.sh prod $action
 
+      # TODO: test release creation
       - name: Create GitHub release
-        if: github.event.inputs.action == 'deploy' || github.event.inputs.action == ''
+        # if: github.event.inputs.action == 'deploy' || github.event.inputs.action == ''
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -184,10 +167,10 @@ jobs:
           release_name: Production Release ${{ github.run_number }}
           body: |
             🚀 **Production Deployment**
-            
+
             **Changes in this release:**
             ${{ github.event.head_commit.message }}
-            
+
             **Commit:** ${{ github.sha }}
             **Deployed by:** ${{ github.actor }}
             **Workflow:** ${{ github.workflow }}
@@ -245,11 +228,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y jq
-
       - name: Check for configuration drift
         run: |
           env="${{ github.event.inputs.environment || 'prod' }}"
@@ -263,7 +241,7 @@ jobs:
       #     # Check if stack exists and get drift status
       #     if aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region ${{ env.AWS_DEFAULT_REGION }} &>/dev/null; then
       #       echo "Checking drift for stack: $STACK_NAME"
-            
+
       #       # Start drift detection
       #       DRIFT_ID=$(aws cloudformation detect-stack-drift \
       #         --stack-name "$STACK_NAME" \

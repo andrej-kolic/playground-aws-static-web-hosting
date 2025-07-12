@@ -4,19 +4,24 @@
 # Default values
 CONFIG_FILE="deploy-config.json"
 ENVIRONMENT=${1:-dev}
-REGION="us-east-1"              # <-- Change this to your region
-STACK_NAME="static-website-dev" # <-- Change this to your stack name
+REGION="us-east-1"
+STACK_NAME="static-website-dev"
 
 
-# Get configuration for environment
-env=$1
-if ! jq -e ".${env}" "$CONFIG_FILE" > /dev/null 2>&1; then
-    echo "Configuration for environment '${env}' not found in ${CONFIG_FILE}"
+# Check if the configuration file exists and set variables
+if ! jq -e ".${ENVIRONMENT}" "$CONFIG_FILE" > /dev/null 2>&1; then
+    echo "Configuration for environment '${ENVIRONMENT}' not found in ${CONFIG_FILE}"
     exit 1
 fi
+STACK_NAME=$(jq -r ".${ENVIRONMENT}.stackName" "$CONFIG_FILE")
+REGION=$(jq -r ".${ENVIRONMENT}.region" "$CONFIG_FILE")
 
-STACK_NAME=$(jq -r ".${env}.stackName" "$CONFIG_FILE")
-REGION=$(jq -r ".${env}.region" "$CONFIG_FILE")
+
+# Check if the stack exists
+if ! aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$REGION" &>/dev/null; then
+  echo "Stack $STACK_NAME does not exist in $REGION region."
+  exit 1
+fi
 
 
 # drift detection
