@@ -25,7 +25,7 @@ on:
       action:
         description: 'Deployment action'
         required: true
-        default: 'deploy'
+        default: 'content'
         type: choice
 
         options:
