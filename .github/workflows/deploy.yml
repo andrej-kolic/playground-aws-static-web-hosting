@@ -117,7 +117,8 @@ jobs:
   deploy-staging:
     runs-on: ubuntu-latest
     needs: validate
-    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    # if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
     environment: staging
     steps:
       - name: Checkout code
@@ -171,9 +172,6 @@ jobs:
           body: |
             🚀 **Production Deployment**
 
-            **Changes in this release:**
-            ${{ github.event.head_commit.message }}
-
             **Commit:** ${{ github.sha }}
             **Deployed by:** ${{ github.actor }}
             **Workflow:** ${{ github.workflow }}
@@ -193,27 +191,6 @@ jobs:
         uses: stelligent/cfn_nag@master
         with:
           input_path: cloudformation/main.yaml
-
-  # Cost estimation (requires Infracost)
-  cost-estimate:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Infracost
-        uses: infracost/actions/setup@v2
-        with:
-          api-key: ${{ secrets.INFRACOST_API_KEY }}
-
-      - name: Generate cost estimate
-        run: |
-          # Convert CloudFormation to Terraform for cost estimation
-          # This is a placeholder - you would need to implement CF to TF conversion
-          # or use a different cost estimation tool
-          echo "Cost estimation would be implemented here"
-          # infracost breakdown --path=cloudformation/main.yaml
 
   # Drift detection
   drift-detection:
