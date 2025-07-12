@@ -8,9 +8,9 @@ on:
   #   branches:
   #     - main
   #     - develop
-  # pull_request:
-  #   branches:
-  #     - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       environment:
@@ -28,7 +28,6 @@ on:
         default: 'deploy'
         type: choice
 
-        # TODO: add descriptive names to options; add drift detection
         options:
           - deploy
           - infra
