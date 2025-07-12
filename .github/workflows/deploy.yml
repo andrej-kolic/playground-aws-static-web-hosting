@@ -5,12 +5,12 @@ on:
   #   - cron: '*/2 * * * *'
   #   # - cron: '10 15 11 7 *'
   push:
-    branches:
-      - main
-      - develop
-  pull_request:
-    branches:
-      - main
+  #   branches:
+  #     - main
+  #     - develop
+  # pull_request:
+  #   branches:
+  #     - main
   workflow_dispatch:
     inputs:
       environment:
@@ -139,7 +139,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # needs: [validate, deploy-staging] # <--------- TODO: uncomment
+    # needs: [validate, deploy-staging]
+    needs: [validate]
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
     environment: production
     steps:
@@ -217,9 +218,13 @@ jobs:
   drift-detection:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' # TODO: Add action condition
+
+    # use matrix strategy if scheduling this job (env available with `matrix.environment`)
+    # if: github.event_name == 'schedule'
     # strategy:
     #   matrix:
     #     environment: [dev, staging, prod]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -234,69 +239,4 @@ jobs:
       - name: Check for configuration drift
         run: |
           env="${{ github.event.inputs.environment || 'prod' }}"
-          ./scripts/drift-detection.sh $env
-
-      # - name: Check for configuration drift
-      #   run: |
-      #     # Get stack name from config
-      #     STACK_NAME=$(jq -r ".\"${{ matrix.environment }}\".stackName" deploy-config.json)
-          
-      #     # Check if stack exists and get drift status
-      #     if aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region ${{ env.AWS_DEFAULT_REGION }} &>/dev/null; then
-      #       echo "Checking drift for stack: $STACK_NAME"
-
-      #       # Start drift detection
-      #       DRIFT_ID=$(aws cloudformation detect-stack-drift \
-      #         --stack-name "$STACK_NAME" \
-      #         --region ${{ env.AWS_DEFAULT_REGION }} \
-      #         --query 'StackDriftDetectionId' \
-      #         --output text)
-            
-      #       echo "Drift detection ID: $DRIFT_ID"
-            
-      #       # Wait for drift detection to complete
-      #       aws cloudformation wait stack-drift-detection-complete \
-      #         --stack-drift-detection-id "$DRIFT_ID" \
-      #         --region ${{ env.AWS_DEFAULT_REGION }}
-            
-      #       # Get drift results
-      #       DRIFT_STATUS=$(aws cloudformation describe-stack-drift-detection-status \
-      #         --stack-drift-detection-id "$DRIFT_ID" \
-      #         --region ${{ env.AWS_DEFAULT_REGION }} \
-      #         --query 'StackDriftStatus' \
-      #         --output text)
-            
-      #       echo "Drift status for ${{ matrix.environment }}: $DRIFT_STATUS"
-            
-      #       if [ "$DRIFT_STATUS" != "IN_SYNC" ]; then
-      #         echo "⚠️ Configuration drift detected in ${{ matrix.environment }} environment!"
-      #         # You could send notifications here
-      #       else
-      #         echo "✅ No configuration drift detected in ${{ matrix.environment }} environment"
-      #       fi
-      #     else
-      #       echo "Stack $STACK_NAME does not exist in ${{ matrix.environment }} environment"
-      #     fi
-
-  # Drift detection
-  drift-detection-scheduled:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
-    strategy:
-      matrix:
-        environment: [dev, staging, prod]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_DEFAULT_REGION }}
-
-      - name: Check for configuration drift
-        run: |
-          env="${{ matrix.environment }}"
           ./scripts/drift-detection.sh $env
