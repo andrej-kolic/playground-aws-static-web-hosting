@@ -137,6 +137,8 @@ jobs:
   # Deploy to production environment
   deploy-prod:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs: [validate, deploy-staging]
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
     environment: production
