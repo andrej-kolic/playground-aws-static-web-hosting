@@ -87,7 +87,7 @@ jobs:
 
       - name: Deploy to development
         run: |
-          action="${{ github.event.inputs.action || 'deploy' }}"
+          action="${{ github.event.inputs.action || 'content' }}"
           ./scripts/deploy.sh dev $action
 
       - name: Comment PR with deployment info
