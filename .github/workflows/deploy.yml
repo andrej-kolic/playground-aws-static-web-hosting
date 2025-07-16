@@ -74,6 +74,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write # <--- Add this line
+      pull-requests: write # Add this if you also interact with PRs
     needs: validate
     if: |
       github.ref == 'refs/heads/develop' ||
@@ -111,7 +113,7 @@ jobs:
             try {
               const output = execSync('./scripts/deploy.sh dev outputs', { encoding: 'utf8' });
               const websiteUrl = output.match(/Website URL: (https?:\/\/[^\s]+)/);
-              
+
               if (websiteUrl) {
                 github.rest.issues.createComment({
                   issue_number: context.issue.number,
