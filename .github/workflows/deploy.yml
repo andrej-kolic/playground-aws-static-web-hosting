@@ -78,8 +78,8 @@ jobs:
       pull-requests: write # Add this if you also interact with PRs
     needs: validate
     if: |
-      github.ref == 'refs/heads/develop' ||
-      github.head_ref == 'develop' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+      (github.event_name == 'pull_request' && github.head_ref == 'develop') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
     environment: development
     steps:
