@@ -52,13 +52,11 @@ jobs:
     steps:
       - name: Log input parameters
         run: |
-          echo "GITHUB_REF: $GITHUB_REF"
           echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "github.head_ref: ${{ github.head_ref }}"
           echo "github.event.inputs.environment: ${{ github.event.inputs.environment }}"
           echo "github.event.inputs.action: ${{ github.event.inputs.action }}"
-          echo "github.event_name: ${{ github.event_name }}"
-          echo "github.ref: ${{ github.ref }}"
-          echo "github.head_ref: ${{ github.head_ref }}"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -108,12 +106,6 @@ jobs:
         run: |
           action="${{ github.event.inputs.action || 'content' }}"
           ./scripts/deploy.sh dev $action
-
-      - name: Log input parameters
-        run: |
-          echo "GITHUB_REF: $GITHUB_REF"
-          echo "HEAD_REF: ${{ github.head_ref }}"
-          echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
 
       - name: Comment PR with deployment info
         if: github.event_name == 'pull_request'
