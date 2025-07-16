@@ -11,12 +11,13 @@ on:
   pull_request:
     branches:
       - main
+    types: [opened]
   workflow_dispatch:
     inputs:
       environment:
         description: 'Deployment environment'
         required: true
-        default: 'dev'
+        default: ${ env.DEFAULT_ENVIRONMENT }
         type: choice
         options:
           - dev
@@ -25,7 +26,7 @@ on:
       action:
         description: 'Deployment action'
         required: true
-        default: 'content'
+        default: ${ env.DEFAULT_ACTION }
         type: choice
 
         options:
@@ -35,8 +36,15 @@ on:
           - validate
           - drift-detection
 
+concurrency:
+  # Unique group for each workflow + branch + environment + action
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.environment }}-${{ github.event.inputs.action}}
+  cancel-in-progress: true # Cancel any in-progress runs for this group
+
 env:
   AWS_DEFAULT_REGION: us-east-1
+  DEFAULT_ACTION: content # Default action for triggers other than workflow_dispatch
+  DEFAULT_ENVIRONMENT: dev # Default environment for triggers other than workflow_dispatch
 
 jobs:
   # Validate CloudFormation template
@@ -45,12 +53,15 @@ jobs:
     steps:
       - name: Log input parameters
         run: |
-          echo "GITHUB_REF: $GITHUB_REF"
+          echo ""
           echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "github.head_ref: ${{ github.head_ref }}"
           echo "github.event.inputs.environment: ${{ github.event.inputs.environment }}"
           echo "github.event.inputs.action: ${{ github.event.inputs.action }}"
-          echo "github.event_name: ${{ github.event_name }}"
-          echo "github.ref: ${{ github.ref }}"
+          echo ""
+          echo "Default action: ${{ env.DEFAULT_ACTION }}"
+          echo "Default environment: ${{ env.DEFAULT_ENVIRONMENT }}"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -71,8 +82,19 @@ jobs:
   # Deploy to development environment
   deploy-dev:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write # <--- Add this line
+      pull-requests: write # Add this if you also interact with PRs
     needs: validate
-    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+      (github.event_name == 'pull_request' && github.head_ref == 'develop') ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.environment == 'dev' &&
+        contains(fromJSON('["deploy", "infra", "content"]'), github.event.inputs.action)
+      )
     environment: development
     steps:
       - name: Checkout code
@@ -87,7 +109,7 @@ jobs:
 
       - name: Deploy to development
         run: |
-          action="${{ github.event.inputs.action || 'content' }}"
+          action="${{ github.event.inputs.action || env.DEFAULT_ACTION }}"
           ./scripts/deploy.sh dev $action
 
       - name: Comment PR with deployment info
@@ -99,7 +121,7 @@ jobs:
             try {
               const output = execSync('./scripts/deploy.sh dev outputs', { encoding: 'utf8' });
               const websiteUrl = output.match(/Website URL: (https?:\/\/[^\s]+)/);
-              
+
               if (websiteUrl) {
                 github.rest.issues.createComment({
                   issue_number: context.issue.number,
@@ -116,8 +138,13 @@ jobs:
   deploy-staging:
     runs-on: ubuntu-latest
     needs: validate
-    # if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.environment == 'staging' &&
+        contains(fromJSON('["deploy", "infra", "content"]'), github.event.inputs.action)
+      )
     environment: staging
     steps:
       - name: Checkout code
@@ -132,7 +159,7 @@ jobs:
 
       - name: Deploy to staging
         run: |
-          action="${{ github.event.inputs.action || 'deploy' }}"
+          action="${{ github.event.inputs.action || env.DEFAULT_ACTION }}"
           ./scripts/deploy.sh staging $action
 
   # Deploy to production environment
@@ -142,7 +169,10 @@ jobs:
       contents: write
     # needs: [validate, deploy-staging]
     needs: [validate]
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.environment == 'prod' &&
+      contains(fromJSON('["deploy", "infra", "content"]'), github.event.inputs.action)
     environment: production
     steps:
       - name: Checkout code
@@ -157,13 +187,11 @@ jobs:
 
       - name: Deploy to production
         run: |
-          action="${{ github.event.inputs.action || 'deploy' }}"
+          action="${{ github.event.inputs.action || env.DEFAULT_ACTION }}"
           ./scripts/deploy.sh prod $action
 
       # TODO: test release creation
       - name: Create GitHub release
-        # if: github.event.inputs.action == 'deploy' || github.event.inputs.action == ''
-        # if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: release-${{ github.run_number }}
