@@ -72,6 +72,8 @@ jobs:
   # Deploy to development environment
   deploy-dev:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs: validate
     if: |
       github.ref == 'refs/heads/develop' ||
