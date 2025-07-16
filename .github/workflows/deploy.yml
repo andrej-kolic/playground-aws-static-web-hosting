@@ -75,7 +75,7 @@ jobs:
     needs: validate
     if: |
       github.ref == 'refs/heads/develop' ||
-      github.head_ref == 'refs/heads/develop' ||
+      github.head_ref == 'develop' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
     environment: development
     steps:
