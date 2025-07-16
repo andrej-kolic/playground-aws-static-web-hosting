@@ -51,6 +51,7 @@ jobs:
           echo "github.event.inputs.action: ${{ github.event.inputs.action }}"
           echo "github.event_name: ${{ github.event_name }}"
           echo "github.ref: ${{ github.ref }}"
+          echo "github.head_ref: ${{ github.head_ref }}"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -74,6 +75,7 @@ jobs:
     needs: validate
     if: |
       github.ref == 'refs/heads/develop' ||
+      github.head_ref == 'refs/heads/develop' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
     environment: development
     steps:
