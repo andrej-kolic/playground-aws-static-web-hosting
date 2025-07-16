@@ -38,7 +38,8 @@ on:
           - drift-detection
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }} # Unique group for each workflow + branch
+  # Unique group for each workflow + branch + environment + action
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.environment }}-${{ github.event.inputs.action}}
   cancel-in-progress: true # Cancel any in-progress runs for this group
 
 env:
