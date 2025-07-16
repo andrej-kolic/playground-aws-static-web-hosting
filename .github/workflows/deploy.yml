@@ -11,6 +11,8 @@ on:
   pull_request:
     branches:
       - main
+    # types: [opened, synchronize]
+    types: [reopened]
   workflow_dispatch:
     inputs:
       environment:
@@ -34,6 +36,10 @@ on:
           - content
           - validate
           - drift-detection
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }} # Unique group for each workflow + branch
+  cancel-in-progress: true # Cancel any in-progress runs for this group
 
 env:
   AWS_DEFAULT_REGION: us-east-1
