@@ -18,7 +18,7 @@ on:
       environment:
         description: 'Deployment environment'
         required: true
-        default: 'dev'
+        default: ${ env.DEFAULT_ENVIRONMENT }
         type: choice
         options:
           - dev
@@ -44,7 +44,8 @@ concurrency:
 
 env:
   AWS_DEFAULT_REGION: us-east-1
-  DEFAULT_ACTION: validate # Default action for triggers other than workflow_dispatch
+  DEFAULT_ACTION: content # Default action for triggers other than workflow_dispatch
+  DEFAULT_ENVIRONMENT: dev # Default environment for triggers other than workflow_dispatch
 
 jobs:
   # Validate CloudFormation template
@@ -53,11 +54,15 @@ jobs:
     steps:
       - name: Log input parameters
         run: |
+          echo ""
           echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
           echo "GITHUB_REF: $GITHUB_REF"
           echo "github.head_ref: ${{ github.head_ref }}"
           echo "github.event.inputs.environment: ${{ github.event.inputs.environment }}"
           echo "github.event.inputs.action: ${{ github.event.inputs.action }}"
+          echo ""
+          echo "Default action: ${{ env.DEFAULT_ACTION }}"
+          echo "Default environment: ${{ env.DEFAULT_ENVIRONMENT }}"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -150,7 +155,7 @@ jobs:
 
       - name: Deploy to staging
         run: |
-          action="${{ github.event.inputs.action || 'deploy' }}"
+          action="${{ github.event.inputs.action || env.DEFAULT_ACTION }}"
           ./scripts/deploy.sh staging $action
 
   # Deploy to production environment
@@ -175,7 +180,7 @@ jobs:
 
       - name: Deploy to production
         run: |
-          action="${{ github.event.inputs.action || 'deploy' }}"
+          action="${{ github.event.inputs.action || env.DEFAULT_ACTION }}"
           ./scripts/deploy.sh prod $action
 
       # TODO: test release creation
