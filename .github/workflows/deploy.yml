@@ -87,7 +87,11 @@ jobs:
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
       (github.event_name == 'pull_request' && github.head_ref == 'develop') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.environment == 'dev' &&
+        contains(fromJSON('["deploy", "infra", "content"]'), github.event.inputs.action)
+      )
     environment: development
     steps:
       - name: Checkout code
