@@ -44,7 +44,7 @@ concurrency:
 
 env:
   AWS_DEFAULT_REGION: us-east-1
-  DEFAULT_ACTION: content # Default action if not specified in workflow_dispatch input
+  DEFAULT_ACTION: validate # Default action for triggers other than workflow_dispatch
 
 jobs:
   # Validate CloudFormation template
